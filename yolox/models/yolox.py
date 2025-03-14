@@ -11,24 +11,24 @@ import torch
 import torch.nn as nn
 
 from yolox import exp
-from .yolo_head import YOLOXHead
+from .yolo_head import YoloxHead
 from .yolo_pafpn import YOLOPAFPN
 
 HOME = Path(os.environ.get('YOLOX_HOME', str(Path.home() / '.cache' / 'yolox')))
 
-class YOLOX(nn.Module):
+class Yolox(nn.Module):
     """
     YOLOX model module. The module list is defined by create_yolov3_modules function.
     The network returns loss values from three YOLO layers during training
     and detection results during test.
     """
 
-    def __init__(self, backbone: Optional[YOLOPAFPN] = None, head: Optional[YOLOXHead] = None):
+    def __init__(self, backbone: Optional[YOLOPAFPN] = None, head: Optional[YoloxHead] = None):
         super().__init__()
         if backbone is None:
             backbone = YOLOPAFPN()
         if head is None:
-            head = YOLOXHead(80)
+            head = YoloxHead(80)
 
         self.backbone = backbone
         self.head = head
@@ -65,7 +65,7 @@ class YOLOX(nn.Module):
         pretrained_model_name_or_path: Union[str, os.PathLike],
         experiment: Optional[exp.Exp] = None,
         device: str = 'cpu',
-    ) -> 'YOLOX':
+    ) -> 'Yolox':
         path = str(pretrained_model_name_or_path)
         if os.path.isfile(path):
             assert experiment is not None

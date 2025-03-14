@@ -8,7 +8,7 @@ from yolox import data, utils
 from yolox.exp import Exp, get_exp
 
 
-class YOLOXProcessor:
+class YoloxProcessor:
     exp: Exp
     threshold: float
 
