@@ -19,7 +19,7 @@ class YOLOXProcessor:
     ):
         if not isinstance(model_name_or_exp, (str, Exp)):
             raise ValueError("model_name_or_exp must be a string or Exp")
-        
+
         if isinstance(model_name_or_exp, str):
             self.exp = get_exp(exp_name=model_name_or_exp)
         else:
@@ -43,14 +43,14 @@ class YOLOXProcessor:
         results: list[Detections] = []
         for i, image in enumerate(images):
             ratio = min(self.exp.test_size[0] / image.height, self.exp.test_size[1] / image.width)
-            if outputs[0] is None:
+            if outputs[i] is None:
                 results.append(Detections(bboxes=[], scores=[], labels=[]))
             else:
                 results.append(
                     Detections(
-                        bboxes=[tuple((output[:4] / ratio).tolist()) for output in outputs[0]],
-                        scores=[output[4].item() * output[5].item() for output in outputs[0]],
-                        labels=[int(output[6]) for output in outputs[0]],
+                        bboxes=[tuple((output[:4] / ratio).tolist()) for output in outputs[i]],
+                        scores=[output[4].item() * output[5].item() for output in outputs[i]],
+                        labels=[int(output[6]) for output in outputs[i]],
                     )
                 )
         return results
