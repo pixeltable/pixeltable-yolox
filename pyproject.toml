@@ -42,6 +42,16 @@ exclude = [
 ]
 requires-poetry = ">=2.0"
 
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+# pytest-related
+pytest = "^7.2.1"
+pytest-xdist = { extras = ["psutil"], version = "^3.3.1" }
+pytest-rerunfailures = "^14.0.0"
+ruff = "^0.9.7"
+
 [tool.isort]
 force_single_line = false
 line_length = 120
