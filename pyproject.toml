@@ -29,6 +29,9 @@ dependencies = [
     "onnx-simplifier (==0.4.36)",
 ]
 
+[project.scripts]
+yolox = "tools:main"
+
 [tool.poetry.plugins."mkdocstrings.python.templates"]
 extension-name = "tool.doc_plugins.mkdocstrings:get_templates_path"
 
