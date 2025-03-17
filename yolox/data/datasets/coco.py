@@ -29,7 +29,7 @@ def remove_useless_info(coco):
                 anno.pop("segmentation", None)
 
 
-class COCODataset(CacheDataset):
+class CocoDataset(CacheDataset):
     """
     COCO dataset class.
     """

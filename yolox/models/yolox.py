@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
 # Copyright (c) Megvii Inc. All rights reserved.
 
 import os
@@ -12,7 +10,7 @@ import torch.nn as nn
 
 from yolox import exp
 from .yolo_head import YoloxHead
-from .yolo_pafpn import YOLOPAFPN
+from .yolo_pafpn import YoloPafpn
 
 HOME = Path(os.environ.get('YOLOX_HOME', str(Path.home() / '.cache' / 'yolox')))
 
@@ -23,10 +21,10 @@ class Yolox(nn.Module):
     and detection results during test.
     """
 
-    def __init__(self, backbone: Optional[YOLOPAFPN] = None, head: Optional[YoloxHead] = None):
+    def __init__(self, backbone: Optional[YoloPafpn] = None, head: Optional[YoloxHead] = None):
         super().__init__()
         if backbone is None:
-            backbone = YOLOPAFPN()
+            backbone = YoloPafpn()
         if head is None:
             head = YoloxHead(80)
 

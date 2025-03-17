@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) Megvii Inc. All rights reserved.
 import functools
 import os

@@ -21,8 +21,8 @@ class Exp(MyExp):
                     m.eps = 1e-3
                     m.momentum = 0.03
         if "model" not in self.__dict__:
-            from yolox.models import Yolox, YOLOFPN, YoloxHead
-            backbone = YOLOFPN()
+            from yolox.models import Yolox, YoloFpn, YoloxHead
+            backbone = YoloFpn()
             head = YoloxHead(self.num_classes, self.width, in_channels=[128, 256, 512], act="lrelu")
             self.model = Yolox(backbone, head)
         self.model.apply(init_yolo)

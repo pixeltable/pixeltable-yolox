@@ -74,7 +74,7 @@ def per_class_AP_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "A
     return table
 
 
-class COCOEvaluator:
+class CocoEvaluator:
     """
     COCO AP Evaluation class.  All the data in the val2017 dataset are processed
     and evaluated by COCO API.
@@ -289,7 +289,7 @@ class COCOEvaluator:
                 json.dump(data_dict, open(tmp, "w"))
                 cocoDt = cocoGt.loadRes(tmp)
             try:
-                from yolox.layers import COCOeval_opt as COCOeval
+                from yolox.layers import CocoEvalOpt as COCOeval
             except ImportError:
                 from pycocotools.cocoeval import COCOeval
 

@@ -7,7 +7,7 @@ import sys
 import time
 from typing import List
 
-__all__ = ["JitOp", "FastCOCOEvalOp"]
+__all__ = ["JitOp", "FastCocoEvalOp"]
 
 
 class JitOp:
@@ -116,7 +116,7 @@ class JitOp:
         os.remove(module.__file__)
 
 
-class FastCOCOEvalOp(JitOp):
+class FastCocoEvalOp(JitOp):
 
     def __init__(self, name="fast_cocoeval"):
         super().__init__(name=name)

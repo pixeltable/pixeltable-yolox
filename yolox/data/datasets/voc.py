@@ -77,7 +77,7 @@ class AnnotationTransform(object):
         return res, img_info
 
 
-class VOCDetection(CacheDataset):
+class VocDetection(CacheDataset):
 
     """
     VOC Detection Dataset Object

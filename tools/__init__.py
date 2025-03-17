@@ -1,7 +1,6 @@
 # Copyright (c) Megvii, Inc. and its affiliates.
 
 import sys
-
 import yolox
 
 from . import eval, train
