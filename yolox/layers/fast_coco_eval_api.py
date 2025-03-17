@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 # This file comes from
 # https://github.com/facebookresearch/detectron2/blob/master/detectron2/evaluation/fast_eval_api.py
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved

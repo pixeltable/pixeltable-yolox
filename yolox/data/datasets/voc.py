@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 # Code are based on
 # https://github.com/fmassa/vision/blob/voc_dataset/torchvision/datasets/voc.py
 # Copyright (c) Francisco Massa.
