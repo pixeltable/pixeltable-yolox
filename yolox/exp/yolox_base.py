@@ -107,6 +107,8 @@ class Exp(BaseExp):
         # nms threshold
         self.nmsthre = 0.65
 
+        self.deterministic = False
+
     def get_model(self):
         from yolox.models import Yolox, YoloPafpn, YoloxHead
 
@@ -214,7 +216,8 @@ class Exp(BaseExp):
 
         # Make sure each process has different random seed, especially for 'fork' method.
         # Check https://github.com/pytorch/pytorch/issues/63311 for more details.
-        dataloader_kwargs["worker_init_fn"] = worker_init_reset_seed
+        if not self.deterministic:
+            dataloader_kwargs["worker_init_fn"] = worker_init_reset_seed
 
         train_loader = DataLoader(self.dataset, **dataloader_kwargs)
 
