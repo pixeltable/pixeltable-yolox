@@ -6,6 +6,7 @@ import sys
 import warnings
 from loguru import logger
 
+import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -100,6 +101,7 @@ def make_parser():
 def train(exp: Exp, args):
     if exp.seed is not None:
         random.seed(exp.seed)
+        np.random.seed(exp.seed)
         torch.manual_seed(exp.seed)
         cudnn.deterministic = True
         warnings.warn(
