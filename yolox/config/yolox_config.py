@@ -16,6 +16,8 @@ from yolox.data.datasets import Dataset
 
 @dataclass
 class YoloxConfig:
+    name: str
+
     # ---------------- model config ---------------- #
     # detect classes number of model
     num_classes: int = 80
@@ -117,8 +119,8 @@ class YoloxConfig:
     dataset: Optional[Dataset] = None
 
     @classmethod
-    def get_named_config(cls, name: str) -> Optional[YoloxConfig]:
-        return _NAMED_CONFIG.get(name)
+    def get_named_config(cls, name: str) -> Optional[type[YoloxConfig]]:
+        return _NAMED_CONFIG.get(name.replace('-', '_'))
 
     def validate(self):
         h, w = self.input_size
@@ -406,39 +408,35 @@ def validate_config(config: YoloxConfig):
 
 class YoloxS(YoloxConfig):
     def __init__(self):
-        super().__init__()
+        super().__init__("yolox_s")
         self.depth = 0.33
         self.width = 0.50
-        self.exp_name = "yolox_s"
 
 
 class YoloxM(YoloxConfig):
     def __init__(self):
-        super().__init__()
+        super().__init__("yolox_m")
         self.depth = 0.67
         self.width = 0.75
-        self.exp_name = "yolox_m"
 
 
 class YoloxL(YoloxConfig):
     def __init__(self):
-        super().__init__()
+        super().__init__("yolox_l")
         self.depth = 1.0
         self.width = 1.0
-        self.exp_name = "yolox_l"
 
 
 class YoloxX(YoloxConfig):
     def __init__(self):
-        super().__init__()
+        super().__init__("yolox_x")
         self.depth = 1.33
         self.width = 1.25
-        self.exp_name = "yolox_x"
 
 
 class YoloxTiny(YoloxConfig):
     def __init__(self):
-        super().__init__()
+        super().__init__("yolox_tiny")
         self.depth = 0.33
         self.width = 0.375
         self.input_size = (416, 416)
@@ -446,12 +444,11 @@ class YoloxTiny(YoloxConfig):
         self.mosaic_scale = (0.5, 1.5)
         self.test_size = (416, 416)
         self.enable_mixup = False
-        self.exp_name = "yolox_tiny"
 
 
 class YoloxNano(YoloxConfig):
     def __init__(self):
-        super().__init__()
+        super().__init__("yolox_nano")
         self.depth = 0.33
         self.width = 0.25
         self.depthwise = True
@@ -463,11 +460,7 @@ class YoloxNano(YoloxConfig):
         self.enable_mixup = False
 
 
-_NAMED_CONFIG = {
-    'yolox_s': YoloxS(),
-    'yolox_m': YoloxM(),
-    'yolox_l': YoloxL(),
-    'yolox_x': YoloxX(),
-    'yolox_tiny': YoloxTiny(),
-    'yolox_nano': YoloxNano(),
+_NAMED_CONFIG: dict[str, type[YoloxConfig]] = {
+    model().name: model
+    for model in (YoloxS, YoloxM, YoloxL, YoloxX, YoloxTiny, YoloxNano)
 }

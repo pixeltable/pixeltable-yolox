@@ -59,7 +59,7 @@ class Trainer:
 
         # metric record
         self.meter = MeterBuffer(window_size=config.print_interval)
-        self.file_name = os.path.join(config.output_dir, args.experiment_name)
+        self.file_name = os.path.join(config.output_dir, args.name)
 
         if self.rank == 0:
             os.makedirs(self.file_name, exist_ok=True)

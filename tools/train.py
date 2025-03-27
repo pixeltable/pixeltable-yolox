@@ -1,25 +1,25 @@
 # Copyright (c) Megvii, Inc. and its affiliates.
 
 import argparse
+import importlib
 import random
 import sys
 from typing import Optional
 import warnings
 from loguru import logger
 
-import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 
-from yolox.config.yolox_config import YoloxConfig
+from yolox.config import YoloxConfig
 from yolox.core import launch
 from yolox.utils import configure_module, configure_nccl, configure_omp, get_num_devices
 
 
 def make_parser():
     parser = argparse.ArgumentParser("yolox train")
-    parser.add_argument("-expn", "--experiment-name", type=str, default=None)
-    parser.add_argument("-n", "--name", type=str, default=None, help="model name")
+    parser.add_argument("-c", "--config", type=str, help="A builtin config such as yolox_s, or a custom Python class given as {module}:{classname} such as yolox.config:YoloxS")
+    parser.add_argument("-n", "--name", type=str, default=None, help="Model name; defaults to the model name specified in config")
 
     # distributed
     parser.add_argument(
@@ -45,7 +45,7 @@ def make_parser():
     parser.add_argument(
         "--resume", default=False, action="store_true", help="resume training"
     )
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="checkpoint file")
+    parser.add_argument("--ckpt", default=None, type=str, help="checkpoint file")
     parser.add_argument(
         "-e",
         "--start_epoch",
@@ -120,17 +120,38 @@ def train(config: YoloxConfig, args):
     trainer.train()
 
 
+def resolve_config(config_str: str) -> YoloxConfig:
+    config_class = YoloxConfig.get_named_config(config_str)
+    if config_class is None:
+        classpath = config_str.split(":")
+        if len(classpath) == 2:
+            try:
+                module = importlib.import_module(classpath[0])
+                config_class = getattr(module, classpath[1], None)
+            except ImportError:
+                pass
+    if config_class is None:
+        raise ValueError(f"Unknown config class: {config_str}")
+    if not issubclass(config_class, YoloxConfig):
+        raise ValueError(f"Invalid config class (does not extend `YoloxConfig`): {config_str}")
+
+    try:
+        return config_class()
+    except Exception as e:
+        raise ValueError(f"Error loading model config: {config_str}") from e
+
+
 def main(argv: list[str]) -> None:
     configure_module()
     args = make_parser().parse_args(argv)
-    config: Optional[YoloxConfig] = YoloxConfig.get_named_config(args.name)
-    if config is None:
-        raise ValueError(f"Model {args.name!r} not found.")
+    if args.config is None:
+        raise AttributeError("Please specify a config file.")
+    config = resolve_config(args.config)
     config.update(args.opts)
     config.validate()
 
-    if not args.experiment_name:
-        args.experiment_name = config.exp_name
+    if not args.name:
+        args.name = config.name
 
     num_gpu = get_num_devices() if args.devices is None else args.devices
     assert num_gpu <= get_num_devices()
