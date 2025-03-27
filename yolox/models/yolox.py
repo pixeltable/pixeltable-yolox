@@ -8,7 +8,7 @@ from typing import Optional, Union
 import torch
 import torch.nn as nn
 
-from yolox.config import YoloxConfig, get_named_config
+from yolox.config import YoloxConfig
 
 from .yolo_head import YoloxHead
 from .yolo_pafpn import YoloPafpn
@@ -70,7 +70,7 @@ class Yolox(nn.Module):
             if config is None:
                 raise ValueError('config must be provided when loading model from a file')
         else:
-            config = get_named_config(path)
+            config = YoloxConfig.get_named_config(path)
             if config is None:
                 raise ValueError(f'Unknown model: {pretrained_model_name_or_path}')
             path = cls.__cached_pretrained_model(path)

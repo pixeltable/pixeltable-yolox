@@ -1,12 +1,17 @@
 # Copyright (c) Megvii Inc. All rights reserved.
 
+from __future__ import annotations
+
+import ast
 import random
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+
+from yolox.data.datasets import Dataset
 
 
 @dataclass
@@ -23,7 +28,14 @@ class YoloxConfig:
     # activation name. For example, if using "relu", then "silu" will be replaced to "relu".
     act: Literal["silu", "relu", "lrelu"] = "silu"
 
+    seed: Optional[Any] = None
+    output_dir: str = "./YOLOX_outputs"
+    print_interval: int = 100
+    eval_interval: int = 10
+
     # ---------------- dataloader config ---------------- #
+    # deterministic data loading
+    deterministic: bool = False
     # set worker to 4 for shorter dataloader init time
     # If your training process cost many memory, reduce this value.
     data_num_workers: int = 4
@@ -101,6 +113,43 @@ class YoloxConfig:
     test_conf: float = 0.01
     # nms threshold
     nmsthre: float = 0.65
+
+    dataset: Optional[Dataset] = None
+
+    @classmethod
+    def get_named_config(cls, name: str) -> Optional[YoloxConfig]:
+        return _NAMED_CONFIG.get(name)
+
+    def validate(self):
+        h, w = self.input_size
+        assert h % 32 == 0 and w % 32 == 0, "input size must be multiples of 32"
+
+    def update(self, cfg_list: list[str]):
+        assert len(cfg_list) % 2 == 0, f"length must be even, check value here: {cfg_list}"
+        for k, v in zip(cfg_list[0::2], cfg_list[1::2]):
+            # only update value with same key
+            if hasattr(self, k):
+                src_value = getattr(self, k)
+                src_type = type(src_value)
+
+                # pre-process input if source type is list or tuple
+                if isinstance(src_value, (list, tuple)):
+                    v = v.strip("[]()")
+                    v = [t.strip() for t in v.split(",")]
+
+                    # find type of tuple
+                    if len(src_value) > 0:
+                        src_item_type = type(src_value[0])
+                        v = [src_item_type(t) for t in v]
+
+                if src_value is not None and src_type != type(v):
+                    try:
+                        v = src_type(v)
+                    except Exception:
+                        v = ast.literal_eval(v)
+                setattr(self, k, v)
+            else:
+                raise AttributeError(f'Unknown model configuration option: {k}')
 
     def get_model(self):
         from yolox.models import YoloPafpn, Yolox, YoloxHead
@@ -412,3 +461,13 @@ class YoloxNano(YoloxConfig):
         self.test_size = (416, 416)
         self.mosaic_prob = 0.5
         self.enable_mixup = False
+
+
+_NAMED_CONFIG = {
+    'yolox_s': YoloxS(),
+    'yolox_m': YoloxM(),
+    'yolox_l': YoloxL(),
+    'yolox_x': YoloxX(),
+    'yolox_tiny': YoloxTiny(),
+    'yolox_nano': YoloxNano(),
+}
