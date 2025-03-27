@@ -14,8 +14,18 @@ class TestDetections:
             output = model(tensor)
             actual = processor.postprocess(test_images, output)
             print(actual)
-            assert actual == expected
+            for a, e in zip(actual, expected):
+                for ba, be in zip(a['bboxes'], e['bboxes']):
+                    for x, y in zip(ba, be):
+                        assert abs(x - y) < 1e-2
+                for sa, se in zip(a['scores'], e['scores']):
+                    assert abs(sa - se) < 1e-4
+                assert a['labels'] == e['labels']
 
+
+# These baselines were computed with torchvision-0.17.2 / torch-2.2.2. They will reproduce exactly on those torch
+# versions. Other torch versions may produce slightly different results; the test incorporates floating-point
+# tolerance for this reason.
 
 DETECTIONS_DATA = {
     'yolox_s': [
