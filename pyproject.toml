@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.scripts]
-yolox = "tools:main"
+yolox = "yolox.cli:main"
 
 [tool.poetry.plugins."mkdocstrings.python.templates"]
 extension-name = "tool.doc_plugins.mkdocstrings:get_templates_path"
