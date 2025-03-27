@@ -121,15 +121,18 @@ def train(config: YoloxConfig, args):
 
 
 def resolve_config(config_str: str) -> YoloxConfig:
-    config_class = YoloxConfig.get_named_config(config_str)
-    if config_class is None:
-        classpath = config_str.split(":")
-        if len(classpath) == 2:
-            try:
-                module = importlib.import_module(classpath[0])
-                config_class = getattr(module, classpath[1], None)
-            except ImportError:
-                pass
+    config = YoloxConfig.get_named_config(config_str)
+    if config is not None:
+        return config
+
+    config_class: Optional[type[YoloxConfig]] = None
+    classpath = config_str.split(":")
+    if len(classpath) == 2:
+        try:
+            module = importlib.import_module(classpath[0])
+            config_class = getattr(module, classpath[1], None)
+        except ImportError:
+            pass
     if config_class is None:
         raise ValueError(f"Unknown config class: {config_str}")
     if not issubclass(config_class, YoloxConfig):

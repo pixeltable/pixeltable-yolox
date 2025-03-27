@@ -6,6 +6,8 @@ from yolox.models import Yolox, YoloxProcessor
 class TestDetections:
     def test_detections(self, test_images: list[Image]) -> None:
         for model_id, expected in DETECTIONS_DATA.items():
+            print('----------------------------------------')
+            print(f'Testing model: {model_id}')
             model = Yolox.from_pretrained(model_id)
             processor = YoloxProcessor(model_id)
             tensor = processor(test_images)

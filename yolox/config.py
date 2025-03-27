@@ -119,7 +119,7 @@ class YoloxConfig:
     dataset: Optional[Dataset] = None
 
     @classmethod
-    def get_named_config(cls, name: str) -> Optional[type[YoloxConfig]]:
+    def get_named_config(cls, name: str) -> Optional[YoloxConfig]:
         return _NAMED_CONFIG.get(name.replace('-', '_'))
 
     def validate(self):
@@ -460,7 +460,7 @@ class YoloxNano(YoloxConfig):
         self.enable_mixup = False
 
 
-_NAMED_CONFIG: dict[str, type[YoloxConfig]] = {
-    model().name: model
-    for model in (YoloxS, YoloxM, YoloxL, YoloxX, YoloxTiny, YoloxNano)
+_NAMED_CONFIG: dict[str, YoloxConfig] = {
+    config.name: config
+    for config in (YoloxS(), YoloxM(), YoloxL(), YoloxX(), YoloxTiny(), YoloxNano())
 }

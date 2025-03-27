@@ -73,7 +73,7 @@ class Yolox(nn.Module):
             config = YoloxConfig.get_named_config(path)
             if config is None:
                 raise ValueError(f'Unknown model: {pretrained_model_name_or_path}')
-            path = cls.__cached_pretrained_model(path)
+            path = cls.__cached_pretrained_weights(path)
         model = config.get_model().to(device)
         model.eval()
         model.head.training = False
@@ -83,7 +83,7 @@ class Yolox(nn.Module):
         return model
 
     @classmethod
-    def __cached_pretrained_model(cls, model_id: str) -> str:
+    def __cached_pretrained_weights(cls, model_id: str) -> str:
         weights_dir = HOME / 'weights'
         weights_dir.mkdir(exist_ok=True, parents=True)
         weights_file = weights_dir / f'{model_id}.pth'
