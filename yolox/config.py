@@ -126,9 +126,8 @@ class YoloxConfig:
         h, w = self.input_size
         assert h % 32 == 0 and w % 32 == 0, "input size must be multiples of 32"
 
-    def update(self, cfg_list: list[str]):
-        assert len(cfg_list) % 2 == 0, f"length must be even, check value here: {cfg_list}"
-        for k, v in zip(cfg_list[0::2], cfg_list[1::2]):
+    def update(self, opts: dict[str, str]):
+        for k, v in opts.items():
             # only update value with same key
             if hasattr(self, k):
                 src_value = getattr(self, k)

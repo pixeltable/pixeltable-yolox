@@ -26,3 +26,16 @@ def resolve_config(config_str: str) -> YoloxConfig:
         return config_class()
     except Exception as e:
         raise ValueError(f"Error loading model config: {config_str}") from e
+
+
+def parse_model_config_opts(kv_opts: list[str]) -> dict[str, str]:
+    """
+    Parse key-value options from a list of strings.
+    """
+    kv_dict = {}
+    for kv in kv_opts:
+        if "=" not in kv:
+            raise ValueError(f"Invalid model configuration option (must be of the form OPT=VALUE): {kv}")
+        key, value = kv.split("=", 1)
+        kv_dict[key] = value
+    return kv_dict
