@@ -1,19 +1,19 @@
 # Copyright (c) Megvii, Inc. and its affiliates.
 
 import argparse
-import importlib
 import random
 import sys
-from typing import Optional
 import warnings
-from loguru import logger
 
 import torch
-import torch.backends.cudnn as cudnn
+from loguru import logger
+from torch.backends import cudnn
 
 from yolox.config import YoloxConfig
 from yolox.core import launch
 from yolox.utils import configure_module, configure_nccl, configure_omp, get_num_devices
+
+from .utils import resolve_config
 
 
 def make_parser():
@@ -34,13 +34,6 @@ def make_parser():
     parser.add_argument("-b", "--batch-size", type=int, default=64, help="batch size")
     parser.add_argument(
         "-d", "--devices", default=None, type=int, help="device for training"
-    )
-    parser.add_argument(
-        "-f",
-        "--exp_file",
-        default=None,
-        type=str,
-        help="plz input your experiment description file",
     )
     parser.add_argument(
         "--resume", default=False, action="store_true", help="resume training"
@@ -102,7 +95,6 @@ def make_parser():
 def train(config: YoloxConfig, args):
     if config.seed is not None:
         random.seed(config.seed)
-#        np.random.seed(config.seed)
         torch.manual_seed(config.seed)
         cudnn.deterministic = True
         warnings.warn(
@@ -120,35 +112,11 @@ def train(config: YoloxConfig, args):
     trainer.train()
 
 
-def resolve_config(config_str: str) -> YoloxConfig:
-    config = YoloxConfig.get_named_config(config_str)
-    if config is not None:
-        return config
-
-    config_class: Optional[type[YoloxConfig]] = None
-    classpath = config_str.split(":")
-    if len(classpath) == 2:
-        try:
-            module = importlib.import_module(classpath[0])
-            config_class = getattr(module, classpath[1], None)
-        except ImportError:
-            pass
-    if config_class is None:
-        raise ValueError(f"Unknown config class: {config_str}")
-    if not issubclass(config_class, YoloxConfig):
-        raise ValueError(f"Invalid config class (does not extend `YoloxConfig`): {config_str}")
-
-    try:
-        return config_class()
-    except Exception as e:
-        raise ValueError(f"Error loading model config: {config_str}") from e
-
-
 def main(argv: list[str]) -> None:
     configure_module()
     args = make_parser().parse_args(argv)
     if args.config is None:
-        raise AttributeError("Please specify a config file.")
+        raise AttributeError("Please specify a model configuration.")
     config = resolve_config(args.config)
     config.update(args.opts)
     config.validate()
