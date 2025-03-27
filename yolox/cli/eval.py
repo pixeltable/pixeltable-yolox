@@ -15,7 +15,7 @@ from yolox.config import YoloxConfig
 from yolox.core import launch
 from yolox.utils import configure_module, configure_nccl, fuse_model, get_local_rank, get_model_info, setup_logger
 
-from .utils import resolve_config
+from .utils import parse_model_config_opts, resolve_config
 
 
 def make_parser():
@@ -91,10 +91,11 @@ def make_parser():
         help="speed test only.",
     )
     parser.add_argument(
-        "opts",
-        help="Modify config options using the command-line",
-        default=None,
-        nargs=argparse.REMAINDER,
+        "-D",
+        type=str,
+        metavar="OPT=VALUE",
+        help="Override model configuration option with custom value (example: -D num_classes=71)",
+        action="append",
     )
     return parser
 
@@ -191,7 +192,7 @@ def main(argv: list[str]) -> None:
     if args.config is None:
         raise AttributeError("Please specify a model configuration.")
     config = resolve_config(args.config)
-    config.update(args.opts)
+    config.update(parse_model_config_opts(args.D))
     config.validate()
 
     if not args.name:
