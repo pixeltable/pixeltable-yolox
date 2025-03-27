@@ -148,6 +148,10 @@ class YoloxConfig:
                         v = src_type(v)
                     except Exception:
                         v = ast.literal_eval(v)
+
+                if k == 'seed':
+                    # Special handling for seed, which has a default of None
+                    v = int(v)
                 setattr(self, k, v)
             else:
                 raise AttributeError(f'Unknown model configuration option: {k}')

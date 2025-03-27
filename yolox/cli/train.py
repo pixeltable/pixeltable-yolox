@@ -95,6 +95,7 @@ def make_parser():
 @logger.catch
 def train(config: YoloxConfig, args):
     if config.seed is not None:
+        assert isinstance(config.seed, int)
         random.seed(config.seed)
         torch.manual_seed(config.seed)
         cudnn.deterministic = True
