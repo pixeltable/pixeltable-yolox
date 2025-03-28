@@ -1,9 +1,89 @@
-<div align="center"><img src="assets/logo.png" width="350"></div>
+<div align="center">
+<img src="assets/logo.png" alt="YoloX" width="350"></div>
 <br>
 
 `pixeltable-yolox` is a lightweight, Apache-licensed object detection library built on pytorch. It is a fork of the
 [MegVii YOLOX package](https://github.com/Megvii-BaseDetection/YOLOX) originally authored by Zheng Ge et al,
 modernized for recent versions of Python and refactored to be more easily usable as a Python library.
+
+`pixeltable-yolox` is still a work in progress! Some features of YoloX have not been ported yet.
+
+## Usage
+
+### Inference
+
+```bash
+pip install pixeltable-yolox
+```
+
+```python
+import requests
+from PIL import Image
+from yolox.models import Yolox, YoloxProcessor
+
+url = "https://raw.githubusercontent.com/pixeltable/pixeltable-yolox/main/tests/data/000000000001.jpg"
+image = Image.open(requests.get(url, stream=True).raw)
+
+model = Yolox.from_pretrained("yolox_s")
+processor = YoloxProcessor("yolox_s")
+tensor = processor([image])
+output = model(tensor)
+processor.postprocess([image], output)
+```
+
+This yields the following output:
+
+```python
+[{'bboxes': [
+   (272.36126708984375, 3.5648040771484375, 640.4871826171875, 223.2653350830078),
+   (26.643890380859375, 118.68254089355469, 459.80706787109375, 315.089111328125),
+   (259.41485595703125, 152.3223114013672, 295.37054443359375, 230.41783142089844)],
+  'scores': [0.9417160943584335, 0.8170979975670818, 0.8095869439224117],
+  'labels': [7, 2, 12]}]
+```
+
+The labels are COCO category indices.
+
+```python
+from yolox.data.datasets import COCO_CLASSES
+
+COCO_CLASSES[7]
+```
+
+```python
+'truck'
+```
+
+### Training
+
+```bash
+pip install pixeltable-yolox
+```
+
+Unpack a [COCO dataset](https://cocodataset.org) into `./datasets/COCO`:
+
+```text
+COCO/
+  annotations/
+    instances_train2017.json
+    instances_val2017.json
+  train2017/
+    # image files
+  val2017/
+    # image files
+```
+
+Then:
+
+```bash
+yolox train -c yolox-s -d 8 -b 64 --fp16 -o
+```
+
+For help:
+
+```bash
+yolox train -h
+```
 
 ## Background
 
@@ -11,16 +91,17 @@ The original YOLOX implementation, while powerful, has been updated only sporadi
 
 ## Status
 
-`pixeltable-yolox` is a work in progress; we are pursuing the following changes from the base YOLOX package:
+`pixeltable-yolox` is a work in progress. So far, it contains the following changes to the base YOLOX repo:
 
 - `pip install`able with all versions of Python (3.9+)
-- Maintained with regular updates
-- Refactored to be usable for inference with minimal boilerplate code on the user end
+- New `YoloxProcessor` class to simplify inference
 - Refactored CLI for training and evaluation
-- Improved test coverage with maintained CI
-- Typed for use with `mypy`
+- Improved test coverage
 
-We expect to have an initial release with the above changes by March 31, 2025.
+The following are planned:
+
+- CI with regular testing and updates
+- Typed for use with `mypy`
 
 ## Scope
 
@@ -46,4 +127,6 @@ Without the guidance of [Dr. Jian Sun](https://scholar.google.com/citations?user
 The passing away of Dr. Sun is a huge loss to the Computer Vision field. We add this section here to express our remembrance and condolences to Dr. Sun.
 It is hoped that every AI practitioner in the world will stick to the belief of "continuous innovation to expand cognitive boundaries, and extraordinary technology to achieve product value" and move forward all the way.
 
-<div align="center"><img src="assets/sunjian.png" width="200"></div>
+<div align="center">
+<img src="assets/sunjian.png" alt="Dr. Jian Sun" width="200">
+</div>
