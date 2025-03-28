@@ -3,7 +3,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [project]
-name = "yolox"
+name = "pixeltable-yolox"
 version = "0.4.0"
 description = "Lightweight, open-source, high-performance Yolo implementation"
 license = "Apache-2.0"
@@ -55,13 +55,7 @@ yolox = "yolox.cli:main"
 extension-name = "tool.doc_plugins.mkdocstrings:get_templates_path"
 
 [tool.poetry]
-exclude = [
-    ".pytype",
-    ".pytest_cache",
-    "tests",
-    "docs",
-    "tool",
-]
+packages = [{ include = "yolox" }]
 requires-poetry = ">=2.0"
 
 [tool.poetry.group.dev]
