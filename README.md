@@ -10,11 +10,13 @@ modernized for recent versions of Python and refactored to be more easily usable
 
 ## Usage
 
-### Inference
+### Installation
 
 ```bash
 pip install pixeltable-yolox
 ```
+
+### Inference
 
 ```python
 import requests
@@ -28,7 +30,7 @@ model = Yolox.from_pretrained("yolox_s")
 processor = YoloxProcessor("yolox_s")
 tensor = processor([image])
 output = model(tensor)
-processor.postprocess([image], output)
+result = processor.postprocess([image], output)
 ```
 
 This yields the following output:
@@ -56,11 +58,7 @@ COCO_CLASSES[7]
 
 ### Training
 
-```bash
-pip install pixeltable-yolox
-```
-
-Unpack a [COCO dataset](https://cocodataset.org) into `./datasets/COCO`:
+First unpack a [COCO dataset](https://cocodataset.org) into `./datasets/COCO`:
 
 ```text
 COCO/
@@ -73,7 +71,7 @@ COCO/
     # image files
 ```
 
-Then:
+Then on the command line:
 
 ```bash
 yolox train -c yolox-s -d 8 -b 64 --fp16 -o
