@@ -100,7 +100,6 @@ def make_parser():
     return parser
 
 
-@logger.catch
 def eval(config: YoloxConfig, args, num_gpu):
     if args.seed is not None:
         random.seed(args.seed)

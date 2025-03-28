@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Iterable, TypedDict, Union
 
 import numpy as np
@@ -38,7 +40,7 @@ class YoloxProcessor:
             tensors.append(torch.from_numpy(image_transform))
         return torch.stack(tensors)
 
-    def postprocess(self, images: Iterable[Image], tensor: torch.Tensor) -> list['Detections']:
+    def postprocess(self, images: Iterable[Image], tensor: torch.Tensor) -> list[Detections]:
         outputs: list[torch.Tensor] = utils.postprocess(tensor, self.config.num_classes, self.config.nmsthre, class_agnostic=False)
         results: list[Detections] = []
         for i, image in enumerate(images):

@@ -3,7 +3,11 @@ import subprocess
 from pathlib import Path
 from typing import Union
 
+import pytest
+import torch
 
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is not available")
 class TestTraining:
     """
     The idea of this test is to run a sample model training over just a few epochs in as deterministic a way as

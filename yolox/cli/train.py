@@ -92,7 +92,6 @@ def make_parser():
     return parser
 
 
-@logger.catch
 def train(config: YoloxConfig, args):
     if config.seed is not None:
         assert isinstance(config.seed, int)
