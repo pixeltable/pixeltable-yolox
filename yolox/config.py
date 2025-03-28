@@ -31,7 +31,7 @@ class YoloxConfig:
     act: Literal["silu", "relu", "lrelu"] = "silu"
 
     seed: Optional[Any] = None
-    output_dir: str = "./YOLOX_outputs"
+    output_dir: str = "./out"
     print_interval: int = 100
     eval_interval: int = 10
 
