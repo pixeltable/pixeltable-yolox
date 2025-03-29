@@ -42,7 +42,7 @@ dependencies = [
     "tensorboard (>=2.18.0)",
     "pycocotools (>=2.0.7)",
     "onnx (>=1.17.0)",
-    "onnx-simplifier (>=0.4.10)",
+    "onnxsim (>=0.4.10)",
 ]
 
 [project.urls]
