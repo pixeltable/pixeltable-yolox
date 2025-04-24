@@ -28,10 +28,13 @@ def resolve_config(config_str: str) -> YoloxConfig:
         raise ValueError(f"Error loading model config: {config_str}") from e
 
 
-def parse_model_config_opts(kv_opts: list[str]) -> dict[str, str]:
+def parse_model_config_opts(kv_opts: Optional[list[str]]) -> dict[str, str]:
     """
     Parse key-value options from a list of strings.
     """
+    if kv_opts is None:
+        kv_opts = []
+
     kv_dict = {}
     for kv in kv_opts:
         if "=" not in kv:
