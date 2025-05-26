@@ -121,6 +121,7 @@ class YoloxModule(nn.Module):
 
     @classmethod
     def __cached_pretrained_weights(cls, model_id: str) -> str:
+        model_id = model_id.replace("-", "_")
         weights_dir = HOME / 'weights'
         weights_dir.mkdir(exist_ok=True, parents=True)
         weights_file = weights_dir / f'{model_id}.pth'
