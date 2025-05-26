@@ -36,9 +36,10 @@ class CocoDataset(CacheDataset):
 
     def __init__(
         self,
-        data_dir=None,
-        json_file="instances_train2017.json",
-        name="train2017",
+        data_dir="./datasets/COCO",
+        data_suffix="train2017",
+        images_suffix="",
+        anno_file="annotations/instances_train2017.json",
         img_size=(416, 416),
         preproc=None,
         cache=False,
@@ -48,34 +49,32 @@ class CocoDataset(CacheDataset):
         COCO dataset initialization. Annotation data are read into memory by COCO API.
         Args:
             data_dir (str): dataset root directory
-            json_file (str): COCO json file name
-            name (str): COCO data name (e.g. 'train2017' or 'val2017')
+            anno_file (str): COCO annotations
             img_size (int): target image size after pre-processing
             preproc: data augmentation strategy
         """
-        if data_dir is None:
-            data_dir = os.path.join(get_yolox_datadir(), "COCO")
-        self.data_dir = data_dir
-        self.json_file = json_file
 
-        self.coco = COCO(os.path.join(self.data_dir, "annotations", self.json_file))
+        self.data_dir = data_dir
+        self.data_suffix = data_suffix
+        self.images_suffix = images_suffix
+        self.anno_file = anno_file
+        self.coco = COCO(f"{data_dir}/{anno_file}")
         remove_useless_info(self.coco)
         self.ids = self.coco.getImgIds()
         self.num_imgs = len(self.ids)
         self.class_ids = sorted(self.coco.getCatIds())
         self.cats = self.coco.loadCats(self.coco.getCatIds())
         self._classes = tuple([c["name"] for c in self.cats])
-        self.name = name
         self.img_size = img_size
         self.preproc = preproc
         self.annotations = self._load_coco_annotations()
 
-        path_filename = [os.path.join(name, anno[3]) for anno in self.annotations]
+        path_filename = [os.path.join(data_suffix, images_suffix, anno[3]) for anno in self.annotations]
         super().__init__(
             input_dimension=img_size,
             num_imgs=self.num_imgs,
             data_dir=data_dir,
-            cache_dir_name=f"cache_{name}",
+            cache_dir_name=f"cache_{data_suffix}",
             path_filename=path_filename,
             cache=cache,
             cache_type=cache_type
@@ -141,7 +140,7 @@ class CocoDataset(CacheDataset):
     def load_image(self, index):
         file_name = self.annotations[index][3]
 
-        img_file = os.path.join(self.data_dir, self.name, file_name)
+        img_file = os.path.join(self.data_dir, self.data_suffix, self.images_suffix, file_name)
 
         img = cv2.imread(img_file)
         assert img is not None, f"file named {img_file} not found"
