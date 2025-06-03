@@ -6,20 +6,20 @@ import sys
 import warnings
 
 import torch
-from loguru import logger
 from torch.backends import cudnn
 
 from yolox.config import YoloxConfig
 from yolox.core import launch
 from yolox.utils import configure_module, configure_nccl, configure_omp, get_num_devices
-
 from .utils import parse_model_config_opts, resolve_config
 
 
 def make_parser():
     parser = argparse.ArgumentParser("yolox train")
-    parser.add_argument("-c", "--config", type=str, help="A builtin config such as yolox_s, or a custom Python class given as {module}:{classname} such as yolox.config:YoloxS")
-    parser.add_argument("-n", "--name", type=str, default=None, help="Model name; defaults to the model name specified in config")
+    parser.add_argument("-c", "--config", type=str,
+                        help="A builtin config such as yolox_s, or a custom Python class given as {module}:{classname} such as yolox.config:YoloxS")
+    parser.add_argument("-n", "--name", type=str, default=None,
+                        help="Model name; defaults to the model name specified in config")
 
     # distributed
     parser.add_argument(
@@ -33,7 +33,7 @@ def make_parser():
     )
     parser.add_argument("-b", "--batch-size", type=int, default=64, help="batch size")
     parser.add_argument(
-        "-d", "--devices", default=None, type=int, help="device for training"
+        "-d", "--devices", default=None, type=int, help="number of devices for training"
     )
     parser.add_argument(
         "--resume", default=False, action="store_true", help="resume training"
@@ -52,6 +52,27 @@ def make_parser():
     parser.add_argument(
         "--machine_rank", default=0, type=int, help="node rank for multi-node training"
     )
+    parser.add_argument("--device", type=str, default="cuda",
+                        help="Tensor type to use for training: cpu or cuda")
+    parser.add_argument("--data-dir", type=str, default="./datasets/COCO",
+                        help="Root folder of training data, e.g. /opt/ml/input/data")
+    parser.add_argument("--train-data-suffix", type=str, default="train2017",
+                        help="Subfolder for labeled training data, relative to {data-dir}")
+    parser.add_argument("--val-data-suffix", type=str, default="val2017",
+                        help="Subfolder for labeled validation data, relative to {data-dir}")
+    parser.add_argument("--test-data-suffix", type=str, default="test2017",
+                        help="Subfolder for labeled test data, relative to {data-dir}")
+    parser.add_argument("--images-suffix", type=str, default="",
+                        help="Subfolder for the images, relative to {xxx-data-suffix}")
+    parser.add_argument("--train-anno", type=str, default="annotations/instances_train2017.json",
+                        help="Path of training annotations relative to {data-dir}")
+    parser.add_argument("--val-anno", type=str, default="annotations/instances_val2017.json",
+                        help="Path of validation annotations, relative to {data-dir}")
+    parser.add_argument("--test-anno", type=str, default="annotations/instances_test2017.json",
+                        help="Path of test annotations, relative to {data-dir}")
+    parser.add_argument("--output-dir", type=str, default="./out",
+                        help="Output directory for training results")
+
     parser.add_argument(
         "--fp16",
         dest="fp16",
@@ -118,7 +139,11 @@ def main(argv: list[str]) -> None:
     args = make_parser().parse_args(argv)
     if args.config is None:
         raise AttributeError("Please specify a model configuration.")
+
     config = resolve_config(args.config)
+    # update pre-trained config with the user-defined values
+    config.update(vars(args))
+    # update model params defined by the user
     config.update(parse_model_config_opts(args.D))
     config.validate()
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import logging
 import random
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
@@ -12,6 +13,8 @@ import torch.distributed as dist
 import torch.nn as nn
 
 from yolox.data.datasets import Dataset
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -47,14 +50,16 @@ class YoloxConfig:
     multiscale_range: int = 5
     # you can use this to specify a multiscale range.
     random_size: Optional[tuple[int, int]] = None
-    # dir of dataset images, if data_dir is None, this project will use `datasets` dir
-    data_dir: Optional[str] = None
-    # name of annotation file for training
-    train_ann: str = "instances_train2017.json"
-    # name of annotation file for evaluation
-    val_ann: str = "instances_val2017.json"
-    # name of annotation file for testing
-    test_ann: str = "instances_test2017.json"
+    # tensor type: cpu or cuda
+    device: str = "cuda"
+    data_dir: str = None
+    # subfolders for training, validation and test data
+    train_data_suffix, val_data_suffix, test_data_suffix = ("train", "val", "test")
+    # images subfolder, absolute path: {data_dir}/{train_data_suffix}/{images_suffix}
+    images_suffix: str = "images"
+    # annotation files, absolute path: {data_dir}/{train_ann}
+    train_anno, val_anno, test_anno = ("train/labels/annotations.json", "val/labels/annotations.json",
+                                    "test/labels/annotations.json")
 
     # --------------- transform config ----------------- #
     # prob of applying mosaic aug
@@ -101,7 +106,7 @@ class YoloxConfig:
     # if set to 1, user could see log every iteration.
     print_interval: int = 10
     # eval period in epoch, for example,
-    # if set to 1, model will be evaluate after every epoch.
+    # if set to 1, model will be evaluated after every epoch.
     eval_interval: int = 10
     # save history checkpoint or not.
     # If set to False, yolox will only save latest and best ckpt.
@@ -154,7 +159,7 @@ class YoloxConfig:
                     v = int(v)
                 setattr(self, k, v)
             else:
-                raise AttributeError(f'Unknown model configuration option: {k}')
+                logger.info(f"Unkown model parameter: {k}! Skipping ...")
 
     def get_model(self):
         from yolox.models import YoloPafpn, YoloxModule, YoloxHead
@@ -167,8 +172,10 @@ class YoloxConfig:
 
         if getattr(self, "model", None) is None:
             in_channels = [256, 512, 1024]
-            backbone = YoloPafpn(self.depth, self.width, in_channels=in_channels, depthwise=self.depthwise, act=self.act)
-            head = YoloxHead(self.num_classes, self.width, in_channels=in_channels, depthwise=self.depthwise, act=self.act)
+            backbone = YoloPafpn(self.depth, self.width, in_channels=in_channels, depthwise=self.depthwise,
+                                 act=self.act)
+            head = YoloxHead(self.num_classes, self.width, in_channels=in_channels, depthwise=self.depthwise,
+                             act=self.act)
             self.model = YoloxModule(backbone, head)
 
         self.model.apply(init_yolo)
@@ -189,7 +196,9 @@ class YoloxConfig:
 
         return CocoDataset(
             data_dir=self.data_dir,
-            json_file=self.train_ann,
+            data_suffix=self.train_data_suffix,
+            images_suffix=self.images_suffix,
+            anno_file=self.train_anno,
             img_size=self.input_size,
             preproc=TrainTransform(
                 max_labels=50,
@@ -354,8 +363,9 @@ class YoloxConfig:
 
         return CocoDataset(
             data_dir=self.data_dir,
-            json_file=self.val_ann if not testdev else self.test_ann,
-            name="val2017" if not testdev else "test2017",
+            data_suffix=self.test_data_suffix if testdev else self.val_data_suffix,
+            images_suffix=self.images_suffix,
+            anno_file=self.test_anno if testdev else self.val_anno,
             img_size=self.test_size,
             preproc=ValTransform(legacy=legacy),
         )

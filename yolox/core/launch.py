@@ -109,7 +109,7 @@ def _distributed_worker(
 ):
     assert (
         torch.cuda.is_available()
-    ), "cuda is not available. Please check your installation."
+    ), "CUDA is not available. Please check your installation."
     global_rank = machine_rank * num_gpus_per_machine + local_rank
     logger.info("Rank {} initialization finished.".format(global_rank))
     try:
