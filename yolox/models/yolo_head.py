@@ -542,27 +542,35 @@ class YoloxHead(nn.Module):
     def simota_matching(self, cost, pair_wise_ious, gt_classes, num_gt, fg_mask):
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
 
+        # Чистый фон — сразу отдаём пустые тензоры
+        if num_gt == 0:
+            fg_mask[:] = False
+            return (0,
+                    torch.zeros(0, dtype=gt_classes.dtype, device=gt_classes.device),
+                    torch.zeros(0, dtype=pair_wise_ious.dtype, device=pair_wise_ious.device),
+                    torch.zeros(0, dtype=torch.long, device=cost.device))
+
         n_candidate_k = min(10, pair_wise_ious.size(1))
         topk_ious, _ = torch.topk(pair_wise_ious, n_candidate_k, dim=1)
         dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)
+
         for gt_idx in range(num_gt):
-            _, pos_idx = torch.topk(
-                cost[gt_idx], k=dynamic_ks[gt_idx], largest=False
-            )
+            # Финальный элегантный штрих — явно ограничиваем k размерностью вектора
+            safe_k = min(int(dynamic_ks[gt_idx]), cost[gt_idx].size(0))
+            _, pos_idx = torch.topk(cost[gt_idx], k=safe_k, largest=False)
             matching_matrix[gt_idx][pos_idx] = 1
 
         del topk_ious, dynamic_ks, pos_idx
 
         anchor_matching_gt = matching_matrix.sum(0)
-        # deal with the case that one anchor matches multiple ground-truths
         if anchor_matching_gt.max() > 1:
             multiple_match_mask = anchor_matching_gt > 1
             _, cost_argmin = torch.min(cost[:, multiple_match_mask], dim=0)
-            matching_matrix[:, multiple_match_mask] *= 0
+            matching_matrix[:, multiple_match_mask] = 0
             matching_matrix[cost_argmin, multiple_match_mask] = 1
+
         fg_mask_inboxes = anchor_matching_gt > 0
         num_fg = fg_mask_inboxes.sum().item()
-
         fg_mask[fg_mask.clone()] = fg_mask_inboxes
 
         matched_gt_inds = matching_matrix[:, fg_mask_inboxes].argmax(0)
@@ -572,6 +580,7 @@ class YoloxHead(nn.Module):
             fg_mask_inboxes
         ]
         return num_fg, gt_matched_classes, pred_ious_this_matching, matched_gt_inds
+
 
     def visualize_assign_result(self, xin, labels=None, imgs=None, save_prefix="assign_vis_"):
         # original forward logic
