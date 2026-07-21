@@ -555,7 +555,6 @@ class YoloxHead(nn.Module):
         dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)
 
         for gt_idx in range(num_gt):
-            # Финальный элегантный штрих — явно ограничиваем k размерностью вектора
             safe_k = min(int(dynamic_ks[gt_idx]), cost[gt_idx].size(0))
             _, pos_idx = torch.topk(cost[gt_idx], k=safe_k, largest=False)
             matching_matrix[gt_idx][pos_idx] = 1
@@ -563,11 +562,15 @@ class YoloxHead(nn.Module):
         del topk_ious, dynamic_ks, pos_idx
 
         anchor_matching_gt = matching_matrix.sum(0)
-        if anchor_matching_gt.max() > 1:
+
+        # Защита 1: не вызываем .max() на пустом тензоре
+        if anchor_matching_gt.numel() > 0 and anchor_matching_gt.max() > 1:
             multiple_match_mask = anchor_matching_gt > 1
-            _, cost_argmin = torch.min(cost[:, multiple_match_mask], dim=0)
-            matching_matrix[:, multiple_match_mask] = 0
-            matching_matrix[cost_argmin, multiple_match_mask] = 1
+            # Защита 2: вызываем torch.min только если есть что обрабатывать
+            if multiple_match_mask.any():
+                _, cost_argmin = torch.min(cost[:, multiple_match_mask], dim=0)
+                matching_matrix[:, multiple_match_mask] = 0
+                matching_matrix[cost_argmin, multiple_match_mask] = 1
 
         fg_mask_inboxes = anchor_matching_gt > 0
         num_fg = fg_mask_inboxes.sum().item()
@@ -580,7 +583,6 @@ class YoloxHead(nn.Module):
             fg_mask_inboxes
         ]
         return num_fg, gt_matched_classes, pred_ious_this_matching, matched_gt_inds
-
 
     def visualize_assign_result(self, xin, labels=None, imgs=None, save_prefix="assign_vis_"):
         # original forward logic
