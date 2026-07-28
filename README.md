@@ -17,6 +17,10 @@ modernized for recent versions of Python and refactored to be more easily usable
 pip install pixeltable-yolox
 ```
 
+###  Upgrde for yolox 
+Замените файлы yolox: Update yolo_head.py из репозитория [ https://github.com/sergss336/yolox](https://github.com/sergss336/yolox/tree/main/yolox/models) 
+                      Update trainer.py   из репозитория [https://github.com/sergss336/yolox/tree/main/yolox/core]
+                      
 ### Inference
 
 ```python
