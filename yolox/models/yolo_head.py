@@ -542,7 +542,7 @@ class YoloxHead(nn.Module):
     def simota_matching(self, cost, pair_wise_ious, gt_classes, num_gt, fg_mask):
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
 
-        # Чистый фон — сразу отдаём пустые тензоры
+        # If background – immediately return empty tensors
         if num_gt == 0:
             fg_mask[:] = False
             return (0,
@@ -563,10 +563,10 @@ class YoloxHead(nn.Module):
 
         anchor_matching_gt = matching_matrix.sum(0)
 
-        # Защита 1: не вызываем .max() на пустом тензоре
+        # do not call .max() on an empty tensor
         if anchor_matching_gt.numel() > 0 and anchor_matching_gt.max() > 1:
             multiple_match_mask = anchor_matching_gt > 1
-            # Защита 2: вызываем torch.min только если есть что обрабатывать
+            # call torch.min only if there is something to process
             if multiple_match_mask.any():
                 _, cost_argmin = torch.min(cost[:, multiple_match_mask], dim=0)
                 matching_matrix[:, multiple_match_mask] = 0
