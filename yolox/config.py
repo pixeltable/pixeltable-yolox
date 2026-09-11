@@ -144,10 +144,18 @@ class YoloxConfig:
                         v = [src_item_type(t) for t in v]
 
                 if src_value is not None and src_type != type(v):
-                    try:
-                        v = src_type(v)
-                    except Exception:
-                        v = ast.literal_eval(v)
+                    if src_type is bool:
+                        if v.lower() == 'true':
+                            v = True
+                        elif v.lower() == 'false':
+                            v = False
+                        else:
+                            raise ValueError(f'Invalid boolean value: {v}')
+                    else:
+                        try:
+                            v = src_type(v)
+                        except Exception:
+                            v = ast.literal_eval(v)
 
                 if k == 'seed':
                     # Special handling for seed, which has a default of None
