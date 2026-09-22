@@ -52,17 +52,20 @@ class CocoDataset(CacheDataset):
             img_size (int): target image size after pre-processing
             preproc: data augmentation strategy
         """
+        data_dir_hint = ""
         if data_dir is None:
             data_dir = os.path.join(get_yolox_datadir(), "COCO")
+            data_dir_hint = " or set the YOLOX_DATADIR environment variable"
         self.data_dir = data_dir
         self.json_file = json_file
 
+        # os.path.join() keeps json_file unchanged when it is an absolute path
         ann_path = os.path.join(self.data_dir, "annotations", self.json_file)
         img_dir = os.path.join(self.data_dir, name)
         expected = (
             f"Expected layout: {self.data_dir}/annotations/<annotation json> plus an image "
-            f"directory {img_dir}. Override with -D data_dir=.../-D train_ann=.../-D *_img_dir=... "
-            "or set the YOLOX_DATADIR environment variable."
+            f"directory {img_dir}. Override with -D data_dir=..., -D train_ann=.../val_ann=.../test_ann=... "
+            f"(absolute paths allowed), -D train_img_dir=.../val_img_dir=.../test_img_dir=...{data_dir_hint}."
         )
         if not os.path.isfile(ann_path):
             raise FileNotFoundError(f"Annotation file not found: {ann_path}. {expected}")
