@@ -8,12 +8,12 @@
 want pretrained inference and training, and for Pixeltable users who want a computed column for YOLOX
 object detection on an image table or YOLOX video object detection on frames from a video table. The
 library is a fork of [Megvii YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) by Zheng Ge et al. and
-runs on Python 3.9+. Install it with `pip install pixeltable-yolox`. `pip install yolox` installs the older
+runs on Python 3.10+. Install it with `pip install pixeltable-yolox`. `pip install yolox` installs the older
 Megvii distribution published on PyPI. License: [Apache 2.0](LICENSE).
 
 ## Quick start
 
-Python 3.9 or newer.
+Python 3.10 or newer.
 
 ```bash
 pip install pixeltable-yolox
