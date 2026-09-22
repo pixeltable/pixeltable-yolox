@@ -1,6 +1,5 @@
 # Copyright (c) Megvii Inc. All rights reserved.
 
-from .build import *
 from .darknet import CspDarknet, Darknet
 from .losses import IouLoss
 from .processor import YoloxProcessor

@@ -154,12 +154,12 @@ class WandbLogger(object):
             the prefix `wandb-`.
             Example
             ```
-            python tools/train.py .... --logger wandb wandb-project <project-name> \
-                wandb-name <run-name> \
-                wandb-id <run-id> \
-                wandb-save_dir <save-dir> \
-                wandb-num_eval_imges <num-images> \
-                wandb-log_checkpoints <bool>
+            yolox train .... --logger wandb -D wandb-project=<project-name> \
+                -D wandb-name=<run-name> \
+                -D wandb-id=<run-id> \
+                -D wandb-save_dir=<save-dir> \
+                -D wandb-num_eval_imges=<num-images> \
+                -D wandb-log_checkpoints=<bool>
             ```
             The val_dataset argument is not open to the command line.
         """

@@ -26,8 +26,8 @@ That being said, there are a few areas that could use immediate attention:
 
 * Testing: The original YOLOX repo had very few tests. We believe strongly in thorough, rigorous test coverage. Any
     improvements to test coverage will have high value.
-* ONNX/torchscript/ncnn deploy integration: These features were present in the original YOLOX, but haven't yet been
-    ported to pixeltable-yolox. They're present in the codebase, but non-functional.
+* Deploy integration: ONNX (`yolox/cli/export_onnx.py`) and TorchScript (`yolox/cli/export_torchscript.py`) export
+    work. TensorRT, ncnn, OpenVINO, and MegEngine support from the original YOLOX has not been ported.
 * Model evaluation: It's in theory part of pixeltable-yolox (via `yolox eval` on the commandline) but is untested.
 
 ## Setting up a Dev Environment
