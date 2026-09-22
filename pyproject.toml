@@ -43,6 +43,8 @@ dependencies = [
     "pycocotools (>=2.0.7)",
     "onnx (>=1.17.0)",
     "onnxsim (>=0.4.10)",
+    # required by torch.onnx.export on torch >= 2.6
+    "onnxscript (>=0.7.0)",
 ]
 
 [project.urls]
