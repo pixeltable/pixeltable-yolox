@@ -1,15 +1,16 @@
-import logging
-import pytest
 import subprocess
+import sys
+from pathlib import Path
 
-logger = logging.getLogger(__name__)
+import pytest
+
+EXPORT_SCRIPT = Path(__file__).parents[2] / 'yolox' / 'cli' / 'export_onnx.py'
 
 
-def test_export_onnx():
-    rs = subprocess.run(["python", "yolox/cli/export_onnx.py", "--name", "yolox_s", "--onnx-name", "yolox_s.onnx", "--onnxsim"])
-    if rs.returncode != 0:
-        pytest.fail("yolox/cli/export_onnx.py failed. See the log for details!")
-    rs = subprocess.run(
-        ["python", "yolox/cli/export_onnx.py", "--name", "yolox_s", "--onnx-name", "yolox_s.onnx"])
-    if rs.returncode != 0:
-        pytest.fail("yolox/cli/export_onnx.py failed. See the log for details!")
+@pytest.mark.parametrize('extra_args', [['--onnxsim'], []])
+def test_export_onnx(tmp_path: Path, extra_args: list[str]) -> None:
+    onnx_path = tmp_path / 'yolox_s.onnx'
+    cmd = [sys.executable, str(EXPORT_SCRIPT), '--name', 'yolox_s', '--onnx-name', str(onnx_path), *extra_args]
+    rs = subprocess.run(cmd, check=False)
+    assert rs.returncode == 0, 'yolox/cli/export_onnx.py failed. See the log for details!'
+    assert onnx_path.exists()

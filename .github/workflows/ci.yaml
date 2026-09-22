@@ -4,31 +4,74 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
+    - run: pip install ruff
+    # the full rule set has pre-existing violations; gate on syntax errors and
+    # undefined names until the backlog is cleaned up
+    - run: ruff check --select E9,F821 yolox tests
+
+  test:
+    name: test (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # opencv-python >= 4.14 shifts detection boxes past the test tolerance, so the
+    # latest-versions job reports without blocking until the baselines are revisited
+    continue-on-error: ${{ matrix.name == 'latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        # declared minimum torch; the detection baselines were computed on it. torch 2.2.x
+        # predates NumPy 2, and opencv-python >= 4.12 requires NumPy 2, so the NumPy cap
+        # must sit in the same pip call as `-e .` or pip upgrades NumPy again.
+        - name: floor
+          python: '3.10'
+          torch: torch==2.2.2 torchvision==0.17.2
+          extra: '"numpy>=1.26.4,<2"'
+        - name: latest
+          python: '3.13'
+          torch: torch torchvision
+          extra: ''
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python }}
+        cache: pip
+        cache-dependency-path: pyproject.toml
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # pin the declared minimum torch so the detection baselines reproduce exactly
-        pip install "torch==2.2.2" "torchvision==0.17.2"
-        pip install -e . pytest ruff
+        # CPU wheels: the default Linux torch wheels pull several GB of CUDA libraries
+        pip install ${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
+        pip install -e . pytest ${{ matrix.extra }}
+        python -c "import cv2, numpy, torch, torchvision; print(cv2.__version__, numpy.__version__, torch.__version__, torchvision.__version__)"
 
-    - name: Lint
-      # the full rule set has pre-existing violations; gate on syntax errors and
-      # undefined names until the backlog is cleaned up
-      run: ruff check --select E9,F821 yolox tests
+    # from_pretrained() downloads ~1.5 GB of checkpoints to ~/.cache/yolox/weights;
+    # the release URLs are fixed, so a static key is enough
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/yolox/weights
+        key: yolox-weights-0.1.1rc0
 
     - name: Tests
-      # test_training.py skips without CUDA; detection/onnx tests download
-      # pretrained weights from GitHub releases on first run
-      run: pytest tests/
+      # test_training.py skips without CUDA
+      run: pytest tests/ -rA
