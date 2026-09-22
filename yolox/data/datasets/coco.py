@@ -57,10 +57,24 @@ class CocoDataset(CacheDataset):
         self.data_dir = data_dir
         self.json_file = json_file
 
-        self.coco = COCO(os.path.join(self.data_dir, "annotations", self.json_file))
+        ann_path = os.path.join(self.data_dir, "annotations", self.json_file)
+        img_dir = os.path.join(self.data_dir, name)
+        expected = (
+            f"Expected layout: {self.data_dir}/annotations/<annotation json> plus an image "
+            f"directory {img_dir}. Override with -D data_dir=.../-D train_ann=.../-D *_img_dir=... "
+            "or set the YOLOX_DATADIR environment variable."
+        )
+        if not os.path.isfile(ann_path):
+            raise FileNotFoundError(f"Annotation file not found: {ann_path}. {expected}")
+        if not os.path.isdir(img_dir):
+            raise FileNotFoundError(f"Image directory not found: {img_dir}. {expected}")
+
+        self.coco = COCO(ann_path)
         remove_useless_info(self.coco)
         self.ids = self.coco.getImgIds()
         self.num_imgs = len(self.ids)
+        if self.num_imgs == 0:
+            raise RuntimeError(f"No images declared in annotation file: {ann_path}. {expected}")
         self.class_ids = sorted(self.coco.getCatIds())
         self.cats = self.coco.loadCats(self.coco.getCatIds())
         self._classes = tuple([c["name"] for c in self.cats])

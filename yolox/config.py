@@ -55,6 +55,12 @@ class YoloxConfig:
     val_ann: str = "instances_val2017.json"
     # name of annotation file for testing
     test_ann: str = "instances_test2017.json"
+    # subdirectory of data_dir containing training images
+    train_img_dir: str = "train2017"
+    # subdirectory of data_dir containing validation images
+    val_img_dir: str = "val2017"
+    # subdirectory of data_dir containing test images
+    test_img_dir: str = "test2017"
 
     # --------------- transform config ----------------- #
     # prob of applying mosaic aug
@@ -203,6 +209,7 @@ class YoloxConfig:
         return CocoDataset(
             data_dir=self.data_dir,
             json_file=self.train_ann,
+            name=self.train_img_dir,
             img_size=self.input_size,
             preproc=TrainTransform(
                 max_labels=50,
@@ -368,7 +375,7 @@ class YoloxConfig:
         return CocoDataset(
             data_dir=self.data_dir,
             json_file=self.val_ann if not testdev else self.test_ann,
-            name="val2017" if not testdev else "test2017",
+            name=self.val_img_dir if not testdev else self.test_img_dir,
             img_size=self.test_size,
             preproc=ValTransform(legacy=legacy),
         )
