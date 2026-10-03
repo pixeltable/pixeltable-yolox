@@ -1,10 +1,8 @@
 # Copyright (c) Megvii Inc. All rights reserved.
-# Please read docs/mlflow_integration.md for more details.
 """
 Logging training runs with hyperparameter, datasets and trained models to MlFlow.
 Mlflow support Model Tracking, Experiment Tracking, and Model Registry.
 It can be hosted on-premises or in all the major cloud provider or with databricks also.
-Please read docs/mlflow_integration.md for more details.
 
 For changing default logging Behaviour you can change mlflow environment variables:
     https://mlflow.org/docs/latest/python_api/mlflow.environment_variables.html
