@@ -30,8 +30,9 @@ jobs:
     name: test (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # opencv-python >= 4.14 shifts detection boxes past the test tolerance, so the
-    # latest-versions job reports without blocking until the baselines are revisited
+    # detection baselines drift ~2px past tolerance with current opencv on
+    # macOS arm64 (not observed on this Linux runner); reports without blocking
+    # until the baselines are revisited - see issue #26
     continue-on-error: ${{ matrix.name == 'latest' }}
     strategy:
       fail-fast: false
