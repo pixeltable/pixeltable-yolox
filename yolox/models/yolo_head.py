@@ -540,6 +540,17 @@ class YoloxHead(nn.Module):
         return anchor_filter, geometry_relation
 
     def simota_matching(self, cost, pair_wise_ious, gt_classes, num_gt, fg_mask):
+        # No anchor passed the geometry constraint for any gt (e.g. every gt center lies
+        # outside the image). fg_mask is already all False; return an empty assignment
+        # instead of calling topk on an empty row.
+        if cost.size(1) == 0:
+            return (
+                0,
+                gt_classes.new_zeros(0),
+                pair_wise_ious.new_zeros(0),
+                torch.zeros(0, dtype=torch.long, device=cost.device),
+            )
+
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
 
         n_candidate_k = min(10, pair_wise_ious.size(1))
