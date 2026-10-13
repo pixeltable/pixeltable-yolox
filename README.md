@@ -1,158 +1,209 @@
 <div align="center">
 <img src="https://raw.githubusercontent.com/pixeltable/pixeltable-yolox/main/assets/logo.png"
-     alt="YoloX" width="350"></div>
-<br>
+     alt="YOLOX" width="350">
+</div>
 
-`pixeltable-yolox` is a lightweight, Apache-licensed object detection library built on pytorch. It is a fork of the
-[MegVii YOLOX package](https://github.com/Megvii-BaseDetection/YOLOX) originally authored by Zheng Ge et al,
-modernized for recent versions of Python and refactored to be more easily usable as a Python library.
+`pixeltable-yolox` is an Apache-licensed, pip-installable YOLOX object detection package maintained by
+[Pixeltable](https://github.com/pixeltable/pixeltable). It is the YOLOX Python package for developers who
+want pretrained inference and training, and for Pixeltable users who want a computed column for YOLOX
+object detection on an image table or YOLOX video object detection on frames from a video table. The
+library is a fork of [Megvii YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) by Zheng Ge et al. and
+runs on Python 3.9+. Install it with `pip install pixeltable-yolox`. `pip install yolox` installs the older
+Megvii distribution published on PyPI. License: [Apache 2.0](LICENSE).
 
-`pixeltable-yolox` is still a work in progress! Some features of YoloX have not been ported yet.
+## Quick start
 
-## Usage
-
-### Installation
+Python 3.9 or newer.
 
 ```bash
 pip install pixeltable-yolox
 ```
 
-### Inference
+`Yolox.from_pretrained` accepts `yolox_nano`, `yolox_tiny`, `yolox_s`, `yolox_m`, `yolox_l`, or `yolox_x`.
+The first call downloads `{model_id}.pth` from the Megvii YOLOX `0.1.1rc0` release into
+`$YOLOX_HOME/weights`, or `~/.cache/yolox/weights` when `YOLOX_HOME` is unset. The default device is CPU.
+
+Inputs are PIL images or file paths. Each detection dict has `bboxes` as `(x1, y1, x2, y2)` in the original
+image, `scores`, and `labels` as COCO category indices (`yolox.data.datasets.COCO_CLASSES`). The default
+score threshold is `0.5`.
 
 ```python
-import requests
+import io
+import urllib.request
+
 from PIL import Image
-from yolox.models import Yolox, YoloxProcessor
-
-url = "https://raw.githubusercontent.com/pixeltable/pixeltable-yolox/main/tests/data/000000000001.jpg"
-image = Image.open(requests.get(url, stream=True).raw)
-
-model = Yolox.from_pretrained("yolox_s")
-result = model([image])  # Inputs can be PIL images or filenames
-```
-
-This yields the following output:
-
-```python
-[{'bboxes': [
-   (272.36126708984375, 3.5648040771484375, 640.4871826171875, 223.2653350830078),
-   (26.643890380859375, 118.68254089355469, 459.80706787109375, 315.089111328125),
-   (259.41485595703125, 152.3223114013672, 295.37054443359375, 230.41783142089844)],
-  'scores': [0.9417160943584335, 0.8170979975670818, 0.8095869439224117],
-  'labels': [7, 2, 12]}]
-```
-
-The labels are COCO category indices.
-
-```python
 from yolox.data.datasets import COCO_CLASSES
+from yolox.models import Yolox
 
-COCO_CLASSES[7]
+url = (
+    'https://raw.githubusercontent.com/pixeltable/pixeltable-yolox'
+    '/main/tests/data/000000000001.jpg'
+)
+with urllib.request.urlopen(url) as response:
+    image = Image.open(io.BytesIO(response.read()))
+    image.load()
+
+model = Yolox.from_pretrained('yolox_s')
+detections = model([image], threshold=0.65)
+labels = detections[0]['labels']
+print(labels)
+print([COCO_CLASSES[label] for label in labels])
 ```
+
+A file path works the same way: `model(['tests/data/000000000001.jpg'], threshold=0.65)`.
+
+The detection test in this repo records labels `[7, 2, 12]` for that image at `threshold=0.65` with
+`yolox_s` (COCO classes `truck`, `car`, and `parking meter`) on torch 2.2.2 and torchvision 0.17.2.
+Other torch builds can shift boxes and scores. The test allows small numeric differences in boxes and
+scores, but requires labels and their order to match exactly.
+
+## YOLOX in Pixeltable
+
+Pixeltable calls this package through
+[`pixeltable.functions.yolox`](https://docs.pixeltable.com/sdk/latest/yolox). A computed column runs YOLOX
+object detection for every image. YOLOX video object detection is the same function on frames from a video
+table. The UDF on Pixeltable main loads the model with `device='cpu'`.
+
+The Pixeltable integration requires Python 3.11 or newer.
+
+```bash
+pip install pixeltable pixeltable-yolox
+```
+
+Notebooks and the REPL use `create_table` and `add_computed_column`. A Pixeltable application assigns the
+same `yolox(...)` call on a `TableModel` and creates the table with `pxt schema update`
+([quick start](https://docs.pixeltable.com/overview/quick-start)).
+
+`model_id` is one of `yolox_nano`, `yolox_tiny`, `yolox_s`, `yolox_m`, `yolox_l`, `yolox_x`. The default
+`threshold` is `0.5`. The stored value has `bboxes`, `scores`, and `labels`.
 
 ```python
-'truck'
+import pixeltable as pxt
+from pixeltable.functions.yolox import yolox, yolo_to_coco
+
+images = pxt.create_table('images', {'image': pxt.Image})
+images.add_computed_column(
+    detections=yolox(images.image, model_id='yolox_s', threshold=0.5)
+)
+images.add_computed_column(detections_coco=yolo_to_coco(images.detections))
+images.insert([{
+    'image': (
+        'https://raw.githubusercontent.com/pixeltable/pixeltable-yolox'
+        '/main/tests/data/000000000001.jpg'
+    ),
+}])
+print(images.select(images.detections).collect())
 ```
 
-### Training
+`yolo_to_coco` returns a list of `{bbox, category}` dicts. `bbox` is COCO `[x, y, width, height]` with each
+value rounded to an integer, and `category` is the YOLOX label.
 
-First unpack a [COCO dataset](https://cocodataset.org) into `./datasets/COCO`:
+For video, extract frames with `frame_iterator`, then add the same computed column. At most one of `fps`,
+`num_frames`, and `keyframes_only` may be set. This is the pattern in
+[Object detection in videos](https://docs.pixeltable.com/howto/use-cases/object-detection-in-videos).
 
-```text
-COCO/
-  annotations/
-    instances_train2017.json
-    instances_val2017.json
-  train2017/
-    # image files
-  val2017/
-    # image files
+```python
+import pixeltable as pxt
+from pixeltable.functions.video import frame_iterator
+from pixeltable.functions.yolox import yolox
+
+videos = pxt.create_table('videos', {'video': pxt.Video})
+frames = pxt.create_view(
+    'frames',
+    videos,
+    iterator=frame_iterator(videos.video, fps=1.0),
+)
+frames.add_computed_column(
+    detections=yolox(frames.frame, model_id='yolox_s', threshold=0.5)
+)
+videos.insert([{
+    'video': (
+        'https://raw.githubusercontent.com/pixeltable/pixeltable'
+        '/release/docs/resources/bangkok.mp4'
+    ),
+}])
+print(frames.select(frames.frame_attrs, frames.detections).limit(3).collect())
 ```
 
-Then on the command line:
+Inserting a video fills the frame view and runs YOLOX object detection on those frames. Frame metadata
+is stored in `frame_attrs`; `frame_attrs['time']` is the frame timestamp in seconds.
+
+## Models
+
+Sizes below are the named configs in `yolox/config.py`. Input size is the default `input_size` and
+`test_size` `(height, width)`. Every named config has `num_classes` 80. Pretrained weights are the
+matching `{model_id}.pth` checkpoint from Megvii release `0.1.1rc0`.
+
+| Model id | Depth | Width | Input size | Depthwise |
+| --- | ---: | ---: | --- | --- |
+| `yolox_nano` | 0.33 | 0.25 | 416×416 | yes |
+| `yolox_tiny` | 0.33 | 0.375 | 416×416 | no |
+| `yolox_s` | 0.33 | 0.50 | 640×640 | no |
+| `yolox_m` | 0.67 | 0.75 | 640×640 | no |
+| `yolox_l` | 1.0 | 1.0 | 640×640 | no |
+| `yolox_x` | 1.33 | 1.25 | 640×640 | no |
+
+## Training
+
+`yolox train` trains a named config on CUDA. `-d` is the GPU count, `-b` is the batch size, and `--fp16`
+enables mixed precision. The run name defaults to the config name, and `output_dir` defaults to `./out`,
+so this command writes `./out/yolox_s/latest_ckpt.pth` after each epoch. Training runs for 300 epochs by
+default; add `-D max_epoch=1` for a single epoch.
 
 ```bash
-yolox train -c yolox-s -d 8 -b 64 --fp16 -o
-```
-
-For help:
-
-```bash
+yolox train -c yolox_s -d 1 -b 8 --fp16
 yolox train -h
 ```
 
-### Separate Module/Processor Steps
+Training reads a COCO dataset. With `YOLOX_DATADIR` unset, the root is `datasets/COCO` under the parent of
+the `yolox` package directory (the repository root in a source checkout). Otherwise it is
+`$YOLOX_DATADIR/COCO`.
 
-To separate out the Pytorch module from image pre- and post-processing during inference (as is typical in the Hugging
-Face transformers API):
-
-```python
-module = YoloxModule.from_pretrained("yolox_s")
-processor = YoloxProcessor("yolox_s")
-tensor = processor([image])
-output = module(tensor)
-result = processor.postprocess([image], output)
+```text
+COCO/
+  annotations/instances_train2017.json
+  annotations/instances_val2017.json
+  train2017/
+  val2017/
 ```
 
-## Background
+Training images are loaded from `<data_dir>/train2017/`, the default `name` on `CocoDataset`. Evaluation
+during training reads `<data_dir>/val2017/` (`get_eval_dataset` passes `name='val2017'`) and
+`annotations/instances_val2017.json`. Override other config fields with repeated `-D name=value` flags,
+for example `-D train_ann=instances_train2017.json` or `-D num_classes=71`.
 
-The original YOLOX implementation, while powerful, has been updated only sporadically since 2022 and now faces
-compatibility issues with current Python environments, dependencies, and platforms like Google Colab. This fork aims
-to provide a reliable, up-to-date, and easy-to-use version of YOLOX that maintains its Apache license, ensuring it
-remains accessible for academic and commercial use.
+Pass `--ckpt` to fine-tune from a checkpoint. The file must contain a `model` state dict, which the
+Megvii release checkpoints do. The loader skips tensors whose shapes do not match, including the
+classification head when `num_classes` is not 80. `data_dir` still uses the COCO layout above.
 
-## Status
+```bash
+yolox train -c yolox_s -d 1 -b 8 --fp16 \
+  --ckpt /path/to/yolox_s.pth \
+  -D num_classes=71 \
+  -D data_dir=/path/to/dataset
+```
 
-`pixeltable-yolox` is a work in progress. So far, it contains the following changes to the base YOLOX repo:
+Use `yolox train` for training. The separate `yolox eval` command is registered (`yolox -h`) but currently
+raises `AttributeError` because it reads `args.experiment_name`, which its parser does not define. Other
+scripts under `yolox/cli/` are not subcommands of `yolox`.
 
-- `pip install`able with all versions of Python (3.9+)
-- New `YoloxProcessor` class to simplify inference
-- Refactored CLI for training and evaluation
-- Improved test coverage
+## Documentation
 
-The following are planned:
-
-- CI with regular testing and updates
-- Typed for use with `mypy`
-
-## Scope
-
-Further improvements such as model enhancements, training tooling beyond what already exists, etc., are not planned;
-our goal is to take the existing feature set and make it more easily usable. However, we are happy to shepherd community
-contributions in those areas and provide engineering infrastructure such as CI and regular releases. We intend to
-publish a contributors’ guide once the initial release is available.
-
-Thanks for your interest! For any questions or feedback, please contact us at `contact@pixeltable.com`.
-
-## Who are we and why are we doing this?
-
-Pixeltable, Inc. is a venture-backed AI infrastructure startup. Our core product is
-[pixeltable](https://github.com/pixeltable/pixeltable), a database and orchestration system purpose-built for
-multimodal AI workloads.
-
-Pixeltable integrates with numerous AI services and open source technologies. In the course of integrating with YOLOX,
-it became clear that there is a strong need in the vision community for a lightweight object detection library with an
-untainted open source license. It also became clear that while YOLOX is an excellent foundation, it would benefit
-greatly from code modernization and more regular updates.
-
-We chose to build upon YOLOX both to simplify our own integration, and also to give something back to the community
-that will (hopefully) prove useful. The Pixeltable team has decades of collective experience in open source development.
-Our backgrounds include companies such as Google, Cloudera, Twitter, Amazon, and Airbnb, that have a strong commitment
-to open source development and collaboration.
-
-## Contributing
-
-We welcome contributions from the community! If you're interested in helping maintain and improve `pixeltable-yolox`,
-check out the [contributors' guide](https://github.com/pixeltable/pixeltable-yolox/blob/main/CONTRIBUTING.md).
+- Pixeltable documentation: <https://docs.pixeltable.com/>
+- `pixeltable.functions.yolox`: <https://docs.pixeltable.com/sdk/latest/yolox>
+- Object detection in videos: <https://docs.pixeltable.com/howto/use-cases/object-detection-in-videos>
+- Pixeltable repository: <https://github.com/pixeltable/pixeltable>
+- Questions: [contact@pixeltable.com](mailto:contact@pixeltable.com)
+- Contributions: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## In memory of Dr. Jian Sun
 
-Without the guidance of [Dr. Jian Sun](https://scholar.google.com/citations?user=ALVSZAYAAAAJ), YOLOX would not have
-been released and open sourced to the community.
-The passing away of Dr. Sun is a huge loss to the Computer Vision field. We add this section here to express our
-remembrance and condolences to Dr. Sun.
-It is hoped that every AI practitioner in the world will stick to the belief of "continuous innovation to expand
-cognitive boundaries, and extraordinary technology to achieve product value" and move forward all the way.
+Without the guidance of [Dr. Jian Sun](https://scholar.google.com/citations?user=ALVSZAYAAAAJ), YOLOX would
+not have been released and open sourced to the community. The passing away of Dr. Sun is a huge loss to the
+Computer Vision field. We add this section here to express our remembrance and condolences to Dr. Sun. It
+is hoped that every AI practitioner in the world will stick to the belief of "continuous innovation to
+expand cognitive boundaries, and extraordinary technology to achieve product value" and move forward all
+the way.
 
 <div align="center">
 <img src="https://raw.githubusercontent.com/pixeltable/pixeltable-yolox/main/assets/sunjian.png"
