@@ -177,9 +177,10 @@ def eval(config: YoloxConfig, args, num_gpu):
             not args.fuse and not is_distributed and args.batch_size == 1
         ), "TensorRT model is not support model fusing and distributed inferencing!"
         trt_file = os.path.join(file_name, "model_trt.pth")
-        assert os.path.exists(
-            trt_file
-        ), "TensorRT model is not found!\n Run tools/trt.py first!"
+        assert os.path.exists(trt_file), (
+            f"TensorRT model not found at {trt_file}. "
+            "pixeltable-yolox does not ship a TensorRT exporter; build it with torch2trt first."
+        )
         model.head.decode_in_inference = False
         decoder = model.head.decode_outputs
     else:

@@ -13,4 +13,3 @@ from .metric import *
 from .mlflow_logger import MlflowLogger
 from .model_utils import *
 from .setup_env import *
-from .visualize import *
