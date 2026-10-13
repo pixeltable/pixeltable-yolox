@@ -126,7 +126,7 @@ class YoloxConfig:
         h, w = self.input_size
         assert h % 32 == 0 and w % 32 == 0, "input size must be multiples of 32"
 
-    def update(self, opts: dict[str, str]):
+    def update(self, opts: dict[str, Any]):
         for k, v in opts.items():
             # only update value with same key
             if hasattr(self, k):
@@ -144,13 +144,24 @@ class YoloxConfig:
                         v = [src_item_type(t) for t in v]
 
                 if src_value is not None and src_type != type(v):
-                    try:
-                        v = src_type(v)
-                    except Exception:
-                        v = ast.literal_eval(v)
+                    if src_type is bool:
+                        if not isinstance(v, str):
+                            raise ValueError(f'Invalid boolean value for {k}: {v}')
+
+                        normalized = v.strip().lower()
+                        if normalized == 'true':
+                            v = True
+                        elif normalized == 'false':
+                            v = False
+                        else:
+                            raise ValueError(f'Invalid boolean value for {k}: {v}')
+                    else:
+                        try:
+                            v = src_type(v)
+                        except Exception:
+                            v = ast.literal_eval(v)
 
                 if k == 'seed':
-                    # Special handling for seed, which has a default of None
                     v = int(v)
                 setattr(self, k, v)
             else:
