@@ -1,5 +1,3 @@
-# Copyright (c) Megvii, Inc. and its affiliates.
-
 import json
 from pathlib import Path
 
