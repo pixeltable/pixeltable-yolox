@@ -120,7 +120,9 @@ class YoloxConfig:
 
     @classmethod
     def get_named_config(cls, name: str) -> Optional[YoloxConfig]:
-        return _NAMED_CONFIG.get(name.replace('-', '_'))
+        config_class = _NAMED_CONFIG_CLASSES.get(name.replace('-', '_'))
+        # a new instance per call: get_model() caches the model on the config
+        return None if config_class is None else config_class()
 
     def validate(self):
         h, w = self.input_size
@@ -474,7 +476,7 @@ class YoloxNano(YoloxConfig):
         self.enable_mixup = False
 
 
-_NAMED_CONFIG: dict[str, YoloxConfig] = {
-    config.name: config
-    for config in (YoloxS(), YoloxM(), YoloxL(), YoloxX(), YoloxTiny(), YoloxNano())
+_NAMED_CONFIG_CLASSES: dict[str, type[YoloxConfig]] = {
+    config_class().name: config_class
+    for config_class in (YoloxS, YoloxM, YoloxL, YoloxX, YoloxTiny, YoloxNano)
 }
