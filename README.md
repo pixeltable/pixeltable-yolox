@@ -19,10 +19,9 @@ Python 3.9 or newer.
 pip install pixeltable-yolox
 ```
 
-`Yolox.from_pretrained` accepts `yolox_nano`, `yolox_tiny`, `yolox_s`, `yolox_m`, `yolox_l`, or `yolox_x`
-(`yolox-s` is accepted too). The first call downloads `{model_id}.pth` from the Megvii YOLOX `0.1.1rc0`
-release into `$YOLOX_HOME/weights`, or `~/.cache/yolox/weights` when `YOLOX_HOME` is unset. The default
-device is CPU. Pass `device='cuda'` to run on GPU.
+`Yolox.from_pretrained` accepts `yolox_nano`, `yolox_tiny`, `yolox_s`, `yolox_m`, `yolox_l`, or `yolox_x`.
+The first call downloads `{model_id}.pth` from the Megvii YOLOX `0.1.1rc0` release into
+`$YOLOX_HOME/weights`, or `~/.cache/yolox/weights` when `YOLOX_HOME` is unset. The default device is CPU.
 
 Inputs are PIL images or file paths. Each detection dict has `bboxes` as `(x1, y1, x2, y2)` in the original
 image, `scores`, and `labels` as COCO category indices (`yolox.data.datasets.COCO_CLASSES`). The default
@@ -55,7 +54,8 @@ A file path works the same way: `model(['tests/data/000000000001.jpg'], threshol
 
 The detection test in this repo records labels `[7, 2, 12]` for that image at `threshold=0.65` with
 `yolox_s` (COCO classes `truck`, `car`, and `parking meter`) on torch 2.2.2 and torchvision 0.17.2.
-Other torch builds can shift boxes and scores; that test allows a small numeric tolerance.
+Other torch builds can shift boxes and scores. The test allows small numeric differences in boxes and
+scores, but requires labels and their order to match exactly.
 
 ## YOLOX in Pixeltable
 
@@ -63,6 +63,8 @@ Pixeltable calls this package through
 [`pixeltable.functions.yolox`](https://docs.pixeltable.com/sdk/latest/yolox). A computed column runs YOLOX
 object detection for every image. YOLOX video object detection is the same function on frames from a video
 table. The UDF on Pixeltable main loads the model with `device='cpu'`.
+
+The Pixeltable integration requires Python 3.11 or newer.
 
 ```bash
 pip install pixeltable pixeltable-yolox
@@ -120,10 +122,11 @@ videos.insert([{
         '/release/docs/resources/bangkok.mp4'
     ),
 }])
-print(frames.select(frames.pos_msec, frames.detections).limit(3).collect())
+print(frames.select(frames.frame_attrs, frames.detections).limit(3).collect())
 ```
 
-Inserting a video fills the frame view and runs YOLOX object detection on those frames.
+Inserting a video fills the frame view and runs YOLOX object detection on those frames. Frame metadata
+is stored in `frame_attrs`; `frame_attrs['time']` is the frame timestamp in seconds.
 
 ## Models
 
@@ -144,7 +147,8 @@ matching `{model_id}.pth` checkpoint from Megvii release `0.1.1rc0`.
 
 `yolox train` trains a named config on CUDA. `-d` is the GPU count, `-b` is the batch size, and `--fp16`
 enables mixed precision. The run name defaults to the config name, and `output_dir` defaults to `./out`,
-so this command writes `./out/yolox_s/latest_ckpt.pth`.
+so this command writes `./out/yolox_s/latest_ckpt.pth` after each epoch. Training runs for 300 epochs by
+default; add `-D max_epoch=1` for a single epoch.
 
 ```bash
 yolox train -c yolox_s -d 1 -b 8 --fp16
@@ -179,8 +183,9 @@ yolox train -c yolox_s -d 1 -b 8 --fp16 \
   -D data_dir=/path/to/dataset
 ```
 
-`yolox train` and `yolox eval` are the registered CLI commands (`yolox -h`). Other scripts under
-`yolox/cli/` are not subcommands of `yolox`.
+Use `yolox train` for training. The separate `yolox eval` command is registered (`yolox -h`) but currently
+raises `AttributeError` because it reads `args.experiment_name`, which its parser does not define. Other
+scripts under `yolox/cli/` are not subcommands of `yolox`.
 
 ## Documentation
 
