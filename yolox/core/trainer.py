@@ -25,6 +25,7 @@ from yolox.utils import (
     get_world_size,
     gpu_mem_usage,
     is_parallel,
+    load_checkpoint,
     load_ckpt,
     mem_usage,
     occupy_mem,
@@ -317,7 +318,7 @@ class Trainer:
             else:
                 ckpt_file = self.args.ckpt
 
-            ckpt = torch.load(ckpt_file, map_location=self.device)
+            ckpt = load_checkpoint(ckpt_file, map_location=self.device)
             # resume the model/optimizer state dict
             model.load_state_dict(ckpt["model"])
             self.optimizer.load_state_dict(ckpt["optimizer"])
@@ -338,7 +339,7 @@ class Trainer:
             if self.args.ckpt is not None:
                 logger.info("loading checkpoint for fine tuning")
                 ckpt_file = self.args.ckpt
-                ckpt = torch.load(ckpt_file, map_location=self.device)["model"]
+                ckpt = load_checkpoint(ckpt_file, map_location=self.device)["model"]
                 model = load_ckpt(model, ckpt)
             self.start_epoch = 0
 
@@ -405,8 +406,9 @@ class Trainer:
                 "start_epoch": self.epoch + 1,
                 "model": save_model.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
-                "best_ap": self.best_ap,
-                "curr_ap": ap,
+                # cast to builtin float: numpy scalars break torch.load(weights_only=True)
+                "best_ap": float(self.best_ap),
+                "curr_ap": float(ap) if ap is not None else ap,
             }
             save_checkpoint(
                 ckpt_state,
@@ -423,7 +425,7 @@ class Trainer:
                     metadata={
                         "epoch": self.epoch + 1,
                         "optimizer": self.optimizer.state_dict(),
-                        "best_ap": self.best_ap,
-                        "curr_ap": ap
+                        "best_ap": float(self.best_ap),
+                        "curr_ap": float(ap) if ap is not None else ap
                     }
                 )

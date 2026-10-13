@@ -1,9 +1,47 @@
 # Copyright (c) Megvii Inc. All rights reserved.
+import contextlib
 import os
+import pickle
 import shutil
+from typing import Union
+
+import numpy as np
+import torch
 from loguru import logger
 
-import torch
+
+def _numpy_scalar_globals() -> list:
+    # Older trainers stored best_ap/curr_ap as numpy.float64 (from cocoEval.stats).
+    # Unpickling one needs exactly these three globals.
+    try:
+        from numpy._core.multiarray import scalar
+    except ImportError:
+        from numpy.core.multiarray import scalar
+    allowed = [np.dtype, type(np.dtype(np.float64))]
+    if tuple(int(x) for x in torch.__version__.split('.')[:2]) >= (2, 6):
+        # Files name the module of the numpy that wrote them: numpy.core (1.x) or numpy._core (2.x).
+        allowed += [(scalar, 'numpy.core.multiarray.scalar'), (scalar, 'numpy._core.multiarray.scalar')]
+    else:
+        allowed.append(scalar)
+    return allowed
+
+
+def load_checkpoint(path: Union[str, os.PathLike], map_location: Union[str, torch.device] = 'cpu') -> dict:
+    """Load a checkpoint with torch.load(weights_only=True). Never falls back to full unpickling."""
+    # torch.serialization.safe_globals() needs torch >= 2.5; on older torch, numpy scalars are rejected.
+    safe_globals = getattr(torch.serialization, 'safe_globals', None)
+    scope = safe_globals(_numpy_scalar_globals()) if safe_globals else contextlib.nullcontext()
+    try:
+        with scope:
+            return torch.load(path, map_location=map_location, weights_only=True)
+    except pickle.UnpicklingError as e:
+        raise RuntimeError(
+            f'Refusing to load {path}: it contains objects that torch.load(weights_only=True) rejects. '
+            'Checkpoints from older yolox trainers store numpy scalars, which load safely on torch >= 2.6. '
+            'If you trust the file, convert it once: '
+            "ckpt = torch.load(path, weights_only=False); ckpt['best_ap'] = float(ckpt['best_ap']); "
+            "ckpt['curr_ap'] = None; torch.save(ckpt, path)"
+        ) from e
 
 
 def load_ckpt(model, ckpt):

@@ -13,7 +13,15 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from yolox.config import YoloxConfig
 from yolox.core import launch
-from yolox.utils import configure_module, configure_nccl, fuse_model, get_local_rank, get_model_info, setup_logger
+from yolox.utils import (
+    configure_module,
+    configure_nccl,
+    fuse_model,
+    get_local_rank,
+    get_model_info,
+    load_checkpoint,
+    setup_logger,
+)
 
 from .utils import parse_model_config_opts, resolve_config
 
@@ -153,7 +161,7 @@ def eval(config: YoloxConfig, args, num_gpu):
             ckpt_file = args.ckpt
         logger.info("loading checkpoint from {}".format(ckpt_file))
         loc = "cuda:{}".format(rank)
-        ckpt = torch.load(ckpt_file, map_location=loc)
+        ckpt = load_checkpoint(ckpt_file, map_location=loc)
         model.load_state_dict(ckpt["model"])
         logger.info("loaded checkpoint done.")
 

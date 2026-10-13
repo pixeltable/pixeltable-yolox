@@ -13,6 +13,7 @@ import torch.nn as nn
 
 from yolox.config import YoloxConfig
 from yolox.models.processor import Detections, YoloxProcessor
+from yolox.utils import load_checkpoint
 
 from .yolo_head import YoloxHead
 from .yolo_pafpn import YoloPafpn
@@ -115,12 +116,14 @@ class YoloxModule(nn.Module):
         model.eval()
         model.head.training = False
         model.training = False
-        weights = torch.load(path, map_location=torch.device(device))
+        weights = load_checkpoint(path, map_location=torch.device(device))
         model.load_state_dict(weights['model'])
         return model
 
     @classmethod
     def __cached_pretrained_weights(cls, model_id: str) -> str:
+        # config names normalize '-' to '_'; pretrained weight files use '_' as well
+        model_id = model_id.replace('-', '_')
         weights_dir = HOME / 'weights'
         weights_dir.mkdir(exist_ok=True, parents=True)
         weights_file = weights_dir / f'{model_id}.pth'
