@@ -167,14 +167,31 @@ COCO/
   val2017/
 ```
 
-Training images are loaded from `<data_dir>/train2017/`, the default `name` on `CocoDataset`. Evaluation
-during training reads `<data_dir>/val2017/` (`get_eval_dataset` passes `name='val2017'`) and
-`annotations/instances_val2017.json`. Override other config fields with repeated `-D name=value` flags,
-for example `-D train_ann=instances_train2017.json` or `-D num_classes=71`.
+Training images are loaded from `<data_dir>/train2017/`, the default `train_img_dir`. Evaluation during
+training reads `<data_dir>/val2017/` (`val_img_dir`) and `annotations/instances_val2017.json`. Override
+config fields with repeated `-D name=value` flags, for example `-D num_classes=71` or `-D max_epoch=50`.
+Annotation names (`train_ann`, `val_ann`, `test_ann`) resolve under `<data_dir>/annotations/` unless the
+value is an absolute path. `train_img_dir`, `val_img_dir`, and `test_img_dir` are the image subdirectory
+names under `data_dir`.
+
+A Roboflow COCO export keeps `_annotations.coco.json` next to the images of each split. Point the
+annotation options at those files and the image options at the split directories:
+
+```bash
+yolox train -c yolox_s -d 1 -b 16 --fp16 \
+  -D data_dir=/data/roboflow -D num_classes=3 \
+  -D train_ann=/data/roboflow/train/_annotations.coco.json -D train_img_dir=train \
+  -D val_ann=/data/roboflow/valid/_annotations.coco.json -D val_img_dir=valid
+```
+
+`-e` / `--start_epoch` takes effect only together with `--resume`. It is the epoch to resume from, not
+the total epoch count. `latest_ckpt.pth` is written after every epoch. `best_ckpt.pth` is written only
+when evaluation AP rises above the previous best, which starts at 0, so a run that stays at AP 0 has no
+`best_ckpt.pth`.
 
 Pass `--ckpt` to fine-tune from a checkpoint. The file must contain a `model` state dict, which the
 Megvii release checkpoints do. The loader skips tensors whose shapes do not match, including the
-classification head when `num_classes` is not 80. `data_dir` still uses the COCO layout above.
+classification head when `num_classes` is not 80.
 
 ```bash
 yolox train -c yolox_s -d 1 -b 8 --fp16 \
@@ -183,9 +200,29 @@ yolox train -c yolox_s -d 1 -b 8 --fp16 \
   -D data_dir=/path/to/dataset
 ```
 
-Use `yolox train` for training. The separate `yolox eval` command is registered (`yolox -h`) but currently
-raises `AttributeError` because it reads `args.experiment_name`, which its parser does not define. Other
-scripts under `yolox/cli/` are not subcommands of `yolox`.
+Evaluate a checkpoint with the same dataset overrides used for training. `yolox eval` reads `-n` / `--name`
+for the run name.
+
+```bash
+yolox eval -c yolox_s -b 8 --ckpt out/yolox_s/latest_ckpt.pth \
+  -D data_dir=/path/to/dataset -D num_classes=71
+```
+
+Load that checkpoint for inference with a config whose `num_classes` matches training:
+
+```python
+from yolox.config import YoloxS
+from yolox.models import Yolox
+
+config = YoloxS()
+config.num_classes = 3
+model = Yolox.from_pretrained('out/yolox_s/latest_ckpt.pth', config=config)
+```
+
+`Yolox.__call__` keeps detections at or above `threshold`, which defaults to 0.5. Training evaluation
+uses `test_conf=0.01`, so a weak checkpoint can return no boxes at the default threshold. Use
+`best_ckpt.pth` in place of `latest_ckpt.pth` when that file exists. Other scripts under `yolox/cli/`
+are not subcommands of `yolox`.
 
 ## Documentation
 
