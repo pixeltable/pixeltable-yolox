@@ -45,8 +45,8 @@ already have standard developer tools such as `git` and `make` installed on your
 
     * Create your conda environment:
 
-        * `conda create --name yolox python=3.9`
-        * For development, we use Python 3.9 (the minimum supported version) to ensure compatibility.
+        * `conda create --name yolox python=3.10`
+        * For development, we use Python 3.10 (the minimum supported version) to ensure compatibility.
 
     * Activate the conda environment:
 
