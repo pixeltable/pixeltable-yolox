@@ -429,7 +429,8 @@ class WandbLogger(object):
     def initialize_wandb_logger(cls, args, exp, val_dataset):
         wandb_params = dict()
         prefix = "wandb-"
-        for k, v in zip(args.opts[0::2], args.opts[1::2]):
+        for kv in args.D or []:
+            k, _, v = kv.partition("=")
             if k.startswith("wandb-"):
                 try:
                     wandb_params.update({k[len(prefix):]: int(v)})

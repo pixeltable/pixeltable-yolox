@@ -119,7 +119,9 @@ def main(argv: list[str]) -> None:
     if args.config is None:
         raise AttributeError("Please specify a model configuration.")
     config = resolve_config(args.config)
-    config.update(parse_model_config_opts(args.D))
+    opts = parse_model_config_opts(args.D)
+    # wandb-* options are logger parameters, not model config fields
+    config.update({k: v for k, v in opts.items() if not k.startswith("wandb-")})
     config.validate()
 
     if not args.name:

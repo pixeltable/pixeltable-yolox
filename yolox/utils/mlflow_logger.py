@@ -201,7 +201,7 @@ class MlflowLogger:
                 self._auto_end_run = True
                 self._initialized = True
             # filters these params from args
-            keys = ['experiment_name', 'batch_size', 'exp_file', 'resume', 'ckpt', 'start_epoch',
+            keys = ['name', 'batch_size', 'config', 'resume', 'ckpt', 'start_epoch',
                     'num_machines', 'fp16', 'logger']
             combined_dict = {k: v for k, v in vars(args).items() if k in keys}
             if exp is not None:
@@ -324,7 +324,7 @@ class MlflowLogger:
             self.save_log_file(args, file_name)
             if self.best_ckpt_upload_pending:
                 model_file_name = "best_ckpt"
-                mlflow_out_dir = f"{args.experiment_name}/{model_file_name}"
+                mlflow_out_dir = f"{args.name}/{model_file_name}"
                 artifact_path = os.path.join(file_name, f"{model_file_name}.pth")
                 self.mlflow_save_pyfunc_model(metadata, artifact_path, mlflow_out_dir)
             if self._auto_end_run and self._ml_flow.active_run():
@@ -341,7 +341,7 @@ class MlflowLogger:
             None
         """
         log_file_path = os.path.join(file_name, "train_log.txt")
-        mlflow_out_dir = f"{args.experiment_name}"
+        mlflow_out_dir = f"{args.name}"
         logger.info(f"Logging logfile: {log_file_path} in mlflow artifact path: {mlflow_out_dir}.")
         self._ml_flow.log_artifact(log_file_path, mlflow_out_dir)
 
@@ -368,13 +368,13 @@ class MlflowLogger:
                 self.save_log_file(args, file_name)
                 if self.best_ckpt_upload_pending:
                     model_file_name = "best_ckpt"
-                    mlflow_out_dir = f"{args.experiment_name}/{model_file_name}"
+                    mlflow_out_dir = f"{args.name}/{model_file_name}"
                     artifact_path = os.path.join(file_name, f"{model_file_name}.pth")
                     self.mlflow_save_pyfunc_model(metadata, artifact_path, mlflow_out_dir)
                     self.best_ckpt_upload_pending = False
                 if self._mlflow_log_nth_epoch_models and exp.save_history_ckpt:
                     model_file_name = f"epoch_{epoch + 1}_ckpt"
-                    mlflow_out_dir = f"{args.experiment_name}/hist_epochs/{model_file_name}"
+                    mlflow_out_dir = f"{args.name}/hist_epochs/{model_file_name}"
                     artifact_path = os.path.join(file_name, f"{model_file_name}.pth")
                     self.mlflow_save_pyfunc_model(metadata, artifact_path, mlflow_out_dir)
 

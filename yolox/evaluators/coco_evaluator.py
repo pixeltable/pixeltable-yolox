@@ -280,6 +280,8 @@ class CocoEvaluator:
         # Evaluate the Dt (detection) json comparing with the ground truth
         if len(data_dict) > 0:
             cocoGt = self.dataloader.dataset.coco
+            # pycocotools 2.0.9/2.0.10 require 'info' in the dataset dict for loadRes
+            cocoGt.dataset.setdefault("info", {})
             # TODO: since pycocotools can't process dict in py36, write data to json file.
             if self.testdev:
                 json.dump(data_dict, open("./yolox_testdev_2017.json", "w"))

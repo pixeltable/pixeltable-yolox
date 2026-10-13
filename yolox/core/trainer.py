@@ -209,7 +209,7 @@ class Trainer:
                     "epoch": self.epoch + 1,
                     "input_size": self.input_size,
                     'start_ckpt': self.args.ckpt,
-                    'exp_file': self.args.exp_file,
+                    'config': self.args.config,
                     "best_ap": float(self.best_ap)
                 }
                 self.mlflow_logger.on_train_end(self.args, file_name=self.file_name,
@@ -392,7 +392,7 @@ class Trainer:
                     "epoch": self.epoch + 1,
                     "input_size": self.input_size,
                     'start_ckpt': self.args.ckpt,
-                    'exp_file': self.args.exp_file,
+                    'config': self.args.config,
                     "best_ap": float(self.best_ap)
                 }
             self.mlflow_logger.save_checkpoints(self.args, self.exp, self.file_name, self.epoch,

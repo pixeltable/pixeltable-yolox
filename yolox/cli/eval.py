@@ -127,7 +127,7 @@ def eval(config: YoloxConfig, args, num_gpu):
 
     rank = get_local_rank()
 
-    file_name = os.path.join(config.output_dir, args.experiment_name)
+    file_name = os.path.join(config.output_dir, args.name)
 
     if rank == 0:
         os.makedirs(file_name, exist_ok=True)
